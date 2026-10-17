@@ -44,7 +44,7 @@ export default function Login() {
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
               <label style={lbl}>Email</label>
-              <input style={inp} type="email" placeholder="admin@teachme.com" value={email} onChange={e => setEmail(e.target.value)} required />
+              <input style={inp} type="email" placeholder="admin@stuumo.com" value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
             <div>
               <label style={lbl}>Password</label>
