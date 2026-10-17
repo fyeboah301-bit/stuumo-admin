@@ -114,7 +114,7 @@ function AdminAvatar({ name, url, size = 44 }) {
   return url ? (
     <img src={url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
   ) : (
-    <div style={{ width: size, height: size, borderRadius: '50%', background: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: Math.round(size * 0.38), fontWeight: '700', color: '#fff', flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: '50%', background: '#6D28D9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: Math.round(size * 0.38), fontWeight: '700', color: '#fff', flexShrink: 0 }}>
       {name?.charAt(0) || '?'}
     </div>
   )
@@ -184,7 +184,7 @@ function DocViewBtn({ fileUrl, name, label = '📄 View document' }) {
   }
   return (
     <>
-      <button onClick={open} style={{ fontSize: '12px', color: '#2563EB', fontWeight: '700', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+      <button onClick={open} style={{ fontSize: '12px', color: '#6D28D9', fontWeight: '700', background: '#F5F3FF', border: '1px solid #DDD6FE', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
         {loading ? '…' : label}
       </button>
       {url && <FilePreviewModal url={url} name={name} onClose={() => setUrl(null)} />}
@@ -196,7 +196,7 @@ function ViewFileBtn({ url, name, label = 'View' }) {
   const [preview, setPreview] = useState(false)
   return (
     <>
-      <button onClick={() => setPreview(true)} style={{ fontSize: '12px', color: '#2563EB', fontWeight: '700', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+      <button onClick={() => setPreview(true)} style={{ fontSize: '12px', color: '#6D28D9', fontWeight: '700', background: '#F5F3FF', border: '1px solid #DDD6FE', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
         {label}
       </button>
       {preview && <FilePreviewModal url={url} name={name} onClose={() => setPreview(false)} />}
@@ -246,7 +246,7 @@ function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, 
             {group.label && <div style={{ fontSize: '10px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '1px', padding: '10px 12px 4px' }}>{group.label}</div>}
             {group.items.map(item => (
               <button key={item.key} onClick={() => setTab(item.key)}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 12px', border: 'none', borderRadius: '8px', background: tab === item.key ? '#2563EB' : 'transparent', color: tab === item.key ? '#fff' : '#94A3B8', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: tab === item.key ? '700' : '400', textAlign: 'left', marginBottom: '1px', transition: 'all 0.12s' }}>
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 12px', border: 'none', borderRadius: '8px', background: tab === item.key ? '#6D28D9' : 'transparent', color: tab === item.key ? '#fff' : '#94A3B8', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: tab === item.key ? '700' : '400', textAlign: 'left', marginBottom: '1px', transition: 'all 0.12s' }}>
                 <span style={{ fontSize: '14px', flexShrink: 0 }}>{item.icon}</span>
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
                 {item.badge != null && <span style={{ fontSize: '11px', fontWeight: '700', padding: '1px 6px', borderRadius: '20px', background: item.badgeRed ? '#FEE2E2' : '#FEF9C3', color: item.badgeRed ? '#991B1B' : '#854D0E', flexShrink: 0 }}>{item.badge}</span>}
@@ -355,7 +355,7 @@ function ApplicationDetail({ teacher, onApprove, onReject }) {
           <div style={{ fontSize: '13px', color: '#64748B', marginBottom: '6px' }}>📍 {teacher.profiles?.city}, {teacher.profiles?.country}</div>
           <StatusBadge status={teacher.application_status} />
         </div>
-        <button onClick={() => setEditing(e => !e)} style={{ padding: '7px 14px', background: editing ? '#F1F5F9' : '#EFF6FF', color: editing ? '#64748B' : '#2563EB', border: `1px solid ${editing ? '#E2E8F0' : '#BFDBFE'}`, borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700', flexShrink: 0 }}>
+        <button onClick={() => setEditing(e => !e)} style={{ padding: '7px 14px', background: editing ? '#F1F5F9' : '#F5F3FF', color: editing ? '#64748B' : '#6D28D9', border: `1px solid ${editing ? '#E2E8F0' : '#DDD6FE'}`, borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700', flexShrink: 0 }}>
           {editing ? 'Cancel edit' : '✏️ Edit application'}
         </button>
       </div>
@@ -378,13 +378,13 @@ function ApplicationDetail({ teacher, onApprove, onReject }) {
             <div>
               <label style={formLbl}>Subjects</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '10px', border: '1px solid #E2E8F0', borderRadius: '8px', background: '#F8FAFC' }}>
-                {SUBJECTS.map(s => <button key={s} type="button" onClick={() => toggleSubject(s)} style={{ padding: '5px 12px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: editForm.subjects.includes(s) ? '700' : '400', background: editForm.subjects.includes(s) ? '#2563EB' : '#fff', color: editForm.subjects.includes(s) ? '#fff' : '#64748B', border: `1px solid ${editForm.subjects.includes(s) ? '#2563EB' : '#E2E8F0'}` }}>{s}</button>)}
+                {SUBJECTS.map(s => <button key={s} type="button" onClick={() => toggleSubject(s)} style={{ padding: '5px 12px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: editForm.subjects.includes(s) ? '700' : '400', background: editForm.subjects.includes(s) ? '#6D28D9' : '#fff', color: editForm.subjects.includes(s) ? '#fff' : '#64748B', border: `1px solid ${editForm.subjects.includes(s) ? '#6D28D9' : '#E2E8F0'}` }}>{s}</button>)}
               </div>
             </div>
             <div>
               <label style={formLbl}>Teaching levels</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '10px', border: '1px solid #E2E8F0', borderRadius: '8px', background: '#F8FAFC' }}>
-                {LEVELS.map(l => <button key={l} type="button" onClick={() => toggleLevel(l)} style={{ padding: '5px 12px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: editForm.teaching_levels.includes(l) ? '700' : '400', background: editForm.teaching_levels.includes(l) ? '#2563EB' : '#fff', color: editForm.teaching_levels.includes(l) ? '#fff' : '#64748B', border: `1px solid ${editForm.teaching_levels.includes(l) ? '#2563EB' : '#E2E8F0'}` }}>{l}</button>)}
+                {LEVELS.map(l => <button key={l} type="button" onClick={() => toggleLevel(l)} style={{ padding: '5px 12px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: editForm.teaching_levels.includes(l) ? '700' : '400', background: editForm.teaching_levels.includes(l) ? '#6D28D9' : '#fff', color: editForm.teaching_levels.includes(l) ? '#fff' : '#64748B', border: `1px solid ${editForm.teaching_levels.includes(l) ? '#6D28D9' : '#E2E8F0'}` }}>{l}</button>)}
               </div>
             </div>
             <button onClick={saveEdit} disabled={saving} style={{ ...btnGreen, padding: '10px', fontSize: '14px', width: '100%', borderRadius: '8px' }}>{saving ? 'Saving...' : '✓ Save application changes'}</button>
@@ -399,7 +399,7 @@ function ApplicationDetail({ teacher, onApprove, onReject }) {
           {teacher.teaching_levels?.length > 0 && (
             <div style={{ padding: '8px 0' }}>
               <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '6px', fontWeight: '600' }}>Teaching levels</div>
-              <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>{teacher.teaching_levels.map(l => <span key={l} style={{ fontSize: '12px', background: '#DBEAFE', color: '#1E40AF', padding: '2px 8px', borderRadius: '20px', fontWeight: '600' }}>{l}</span>)}</div>
+              <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>{teacher.teaching_levels.map(l => <span key={l} style={{ fontSize: '12px', background: '#EDE9FE', color: '#5B21B6', padding: '2px 8px', borderRadius: '20px', fontWeight: '600' }}>{l}</span>)}</div>
             </div>
           )}
         </DrawerSection>
@@ -407,7 +407,7 @@ function ApplicationDetail({ teacher, onApprove, onReject }) {
 
       {teacher.subjects?.length > 0 && !editing && (
         <DrawerSection title="Subjects">
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>{teacher.subjects.map(s => <span key={s} style={{ fontSize: '12px', background: '#EFF6FF', color: '#2563EB', padding: '3px 10px', borderRadius: '20px', fontWeight: '600' }}>{s}</span>)}</div>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>{teacher.subjects.map(s => <span key={s} style={{ fontSize: '12px', background: '#F5F3FF', color: '#6D28D9', padding: '3px 10px', borderRadius: '20px', fontWeight: '600' }}>{s}</span>)}</div>
         </DrawerSection>
       )}
 
@@ -589,7 +589,7 @@ function TeacherDetail({ teacher, allReviews, allBookings, onVerify, onSuspend, 
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '1.5rem' }}>
-        {[['Bookings', teacherBookings.filter(b => b.status === 'confirmed').length, '#2563EB'], ['Reviews', teacherReviews.length, '#D97706'], [`GH₵ ${totalEarned.toFixed(0)}`, 'Earned', '#166534']].map(([val, lbl, color]) => (
+        {[['Bookings', teacherBookings.filter(b => b.status === 'confirmed').length, '#6D28D9'], ['Reviews', teacherReviews.length, '#D97706'], [`GH₵ ${totalEarned.toFixed(0)}`, 'Earned', '#166534']].map(([val, lbl, color]) => (
           <div key={lbl} style={{ background: '#fff', borderRadius: '10px', padding: '12px', border: '1px solid #E2E8F0', textAlign: 'center' }}>
             <div style={{ fontFamily: 'Georgia, serif', fontSize: '20px', fontWeight: '700', color }}>{val}</div>
             <div style={{ fontSize: '12px', color: '#64748B', marginTop: '3px' }}>{lbl}</div>
@@ -609,7 +609,7 @@ function TeacherDetail({ teacher, allReviews, allBookings, onVerify, onSuspend, 
 
       {teacher.subjects?.length > 0 && (
         <DrawerSection title="Subjects">
-          <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>{teacher.subjects.map(s => <span key={s} style={{ fontSize: '12px', background: '#EFF6FF', color: '#2563EB', padding: '3px 10px', borderRadius: '20px', fontWeight: '600' }}>{s}</span>)}</div>
+          <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>{teacher.subjects.map(s => <span key={s} style={{ fontSize: '12px', background: '#F5F3FF', color: '#6D28D9', padding: '3px 10px', borderRadius: '20px', fontWeight: '600' }}>{s}</span>)}</div>
         </DrawerSection>
       )}
       {teacher.bio && <DrawerSection title="Bio"><p style={{ fontSize: '14px', color: '#374151', lineHeight: '1.7', margin: 0 }}>{teacher.bio}</p></DrawerSection>}
@@ -693,7 +693,7 @@ function UserDetail({ user, allBookings, onSuspend, onDelete, onUpdateProfile })
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: '18px', fontWeight: '700', color: '#111', marginBottom: '4px' }}>{user.full_name}</div>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '20px', fontWeight: '600', textTransform: 'capitalize', background: user.role === 'teacher' ? '#DBEAFE' : user.role === 'learner' ? '#DCFCE7' : '#F3E8FF', color: user.role === 'teacher' ? '#1E40AF' : user.role === 'learner' ? '#166534' : '#6B21A8' }}>{user.role}</span>
+            <span style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '20px', fontWeight: '600', textTransform: 'capitalize', background: user.role === 'teacher' ? '#EDE9FE' : user.role === 'learner' ? '#DCFCE7' : '#F3E8FF', color: user.role === 'teacher' ? '#5B21B6' : user.role === 'learner' ? '#166534' : '#6B21A8' }}>{user.role}</span>
             {isSuspended && <StatusBadge status="suspended" />}
           </div>
         </div>
@@ -729,7 +729,7 @@ function UserDetail({ user, allBookings, onSuspend, onDelete, onUpdateProfile })
                 <div style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>{b.subject || 'Tuition'} → {b.teachers?.profiles?.full_name}</div>
                 <div style={{ fontSize: '12px', color: '#64748B' }}>{new Date(b.created_at).toLocaleDateString()}</div>
               </div>
-              {b.amount > 0 && <span style={{ fontSize: '13px', fontWeight: '700', color: '#2563EB' }}>GH₵ {b.amount}</span>}
+              {b.amount > 0 && <span style={{ fontSize: '13px', fontWeight: '700', color: '#6D28D9' }}>GH₵ {b.amount}</span>}
               <StatusBadge status={b.status} />
             </div>
           ))}
@@ -772,7 +772,7 @@ function SessionDetail({ session, enrollmentCount, onUpdate }) {
         <div>
           <h3 style={{ fontSize: '17px', fontWeight: '700', color: '#111', marginBottom: '8px' }}>{session.title}</h3>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            {session.subject && <span style={{ fontSize: '12px', background: '#EFF6FF', color: '#2563EB', padding: '3px 10px', borderRadius: '20px', fontWeight: '600' }}>{session.subject}</span>}
+            {session.subject && <span style={{ fontSize: '12px', background: '#F5F3FF', color: '#6D28D9', padding: '3px 10px', borderRadius: '20px', fontWeight: '600' }}>{session.subject}</span>}
             <StatusBadge status={session.session_date >= today ? 'upcoming' : 'completed'} />
             {session.deleted_at && <StatusBadge status="hidden" />}
           </div>
@@ -1008,11 +1008,11 @@ export default function Dashboard() {
   const pendingRefunds = bookings.filter(b => b.refund_status === 'pending').length
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'DM Sans, sans-serif', color: '#111', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'Tahoma, Geneva, sans-serif', color: '#111', display: 'flex', flexDirection: 'column' }}>
       <nav style={{ background: '#1E293B', borderBottom: '1px solid #334155', padding: '0.875rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ fontFamily: "'Roboto Serif', Georgia, serif", fontSize: '22px', fontWeight: '700', color: '#fff' }}>Stuumo</div>
-          <span style={{ fontSize: '11px', background: '#2563EB', color: '#fff', padding: '2px 10px', borderRadius: '20px', fontWeight: '700' }}>ADMIN</span>
+          <span style={{ fontSize: '11px', background: '#6D28D9', color: '#fff', padding: '2px 10px', borderRadius: '20px', fontWeight: '700' }}>ADMIN</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <span style={{ fontSize: '13px', color: '#94A3B8' }}>{admin?.full_name}</span>
@@ -1068,7 +1068,7 @@ function OverviewTab({ stats, bookings, teachers, pendingApplications, pendingPa
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-        {[['👥','Total users',stats.totalUsers,'#2563EB'],['👩‍🏫','Teachers',stats.teachers,'#7C3AED'],['📚','Learners',stats.learners,'#059669'],['👨‍👩‍👧','Parents',stats.parents,'#D97706']].map(([icon,label,value,color]) => <StatCard key={label} icon={icon} label={label} value={value} color={color} />)}
+        {[['👥','Total users',stats.totalUsers,'#6D28D9'],['👩‍🏫','Teachers',stats.teachers,'#7C3AED'],['📚','Learners',stats.learners,'#059669'],['👨‍👩‍👧','Parents',stats.parents,'#D97706']].map(([icon,label,value,color]) => <StatCard key={label} icon={icon} label={label} value={value} color={color} />)}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
         {[['📅','Total bookings',stats.totalBookings,'#0891B2'],['🎥','Live sessions',stats.totalSessions,'#7C3AED'],['✅','Verified teachers',stats.verified,'#059669'],['💰','Net GMV',`GH₵ ${((stats.totalRevenue||0) - (stats.refundedTotal||0)).toFixed(2)}`,'#166534']].map(([icon,label,value,color]) => <StatCard key={label} icon={icon} label={label} value={value} color={color} />)}
@@ -1080,7 +1080,7 @@ function OverviewTab({ stats, bookings, teachers, pendingApplications, pendingPa
             {[[pendingApplications,'🚀','teacher application','applications'],[pendingPayouts,'💰','teacher payout','payouts'],[pendingRefunds,'↩️','learner refund','refunds'],[pendingCerts,'📋','certificate','certificates'],[pendingDocs,'🪪','document','documents'],[pendingPhotos,'🖼️','photo review','photos'],[pendingFlags,'🚩','flag','flags']].filter(([count]) => count > 0).map(([count,icon,label,tabKey]) => (
               <div key={tabKey} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#fff', borderRadius: '8px', border: '1px solid #FDE68A' }}>
                 <span style={{ fontSize: '14px', color: '#78350F' }}>{icon} {count} {label}{count !== 1 ? 's' : ''} awaiting review</span>
-                <button onClick={() => setTab(tabKey)} style={{ fontSize: '13px', color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '700' }}>Review →</button>
+                <button onClick={() => setTab(tabKey)} style={{ fontSize: '13px', color: '#6D28D9', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '700' }}>Review →</button>
               </div>
             ))}
           </div>
@@ -1092,7 +1092,7 @@ function OverviewTab({ stats, bookings, teachers, pendingApplications, pendingPa
           <div key={b.id} style={{ padding: '12px 1.5rem', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{ flex: 1 }}><div style={{ fontSize: '14px', fontWeight: '600', color: '#111' }}>{b.profiles?.full_name} → {b.teachers?.profiles?.full_name}</div><div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>{b.subject} · {new Date(b.created_at).toLocaleDateString()}</div></div>
             <StatusBadge status={b.status} />
-            {b.amount > 0 && <span style={{ fontSize: '13px', color: '#2563EB', fontWeight: '700' }}>GH₵ {b.amount}</span>}
+            {b.amount > 0 && <span style={{ fontSize: '13px', color: '#6D28D9', fontWeight: '700' }}>GH₵ {b.amount}</span>}
           </div>
         ))}
         {bookings.length === 0 && <div style={{ padding: '2rem', textAlign: 'center', color: '#64748B', fontSize: '14px' }}>No bookings yet.</div>}
@@ -1116,12 +1116,12 @@ function ApplicationsTab({ teachers, allUsers, onApprove, onReject }) {
       </div>
       <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '8px', border: '1px solid #E2E8F0', width: 'fit-content' }}>
         {[['pending','Pending'],['approved','Approved'],['rejected','Rejected'],['all','All']].map(([key,label]) => (
-          <button key={key} onClick={() => setFilter(key)} style={{ padding: '7px 18px', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', background: filter === key ? '#2563EB' : 'transparent', color: filter === key ? '#fff' : '#64748B', fontWeight: filter === key ? '700' : '400' }}>{label}</button>
+          <button key={key} onClick={() => setFilter(key)} style={{ padding: '7px 18px', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', background: filter === key ? '#6D28D9' : 'transparent', color: filter === key ? '#fff' : '#64748B', fontWeight: filter === key ? '700' : '400' }}>{label}</button>
         ))}
       </div>
       <div style={{ fontSize: '13px', color: '#64748B' }}>{filtered.length} application{filtered.length !== 1 ? 's' : ''}</div>
       {filtered.length === 0 ? <Empty text={filter === 'pending' ? '🎉 No pending applications.' : 'No applications found.'} /> : filtered.map(teacher => (
-        <div key={teacher.id} style={{ background: '#fff', borderRadius: '12px', padding: '1.25rem 1.5rem', border: `1px solid ${teacher.application_status === 'pending' ? '#93C5FD' : '#E2E8F0'}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div key={teacher.id} style={{ background: '#fff', borderRadius: '12px', padding: '1.25rem 1.5rem', border: `1px solid ${teacher.application_status === 'pending' ? '#C4B5FD' : '#E2E8F0'}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
             <AdminAvatar name={teacher.profiles?.full_name} url={teacher.profiles?.avatar_url} size={48} />
             <div style={{ flex: 1, minWidth: '200px' }}>
@@ -1137,7 +1137,7 @@ function ApplicationsTab({ teachers, allUsers, onApprove, onReject }) {
                 {teacher.application_submitted_at && <span>📅 {new Date(teacher.application_submitted_at).toLocaleDateString()}</span>}
               </div>
             </div>
-            <button onClick={() => setSelectedTeacher(teacher)} style={{ padding: '8px 18px', background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '700', flexShrink: 0 }}>Open & review →</button>
+            <button onClick={() => setSelectedTeacher(teacher)} style={{ padding: '8px 18px', background: '#F5F3FF', color: '#6D28D9', border: '1px solid #DDD6FE', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '700', flexShrink: 0 }}>Open & review →</button>
           </div>
         </div>
       ))}
@@ -1202,14 +1202,14 @@ function CertificatesTab({ certificates, onUpdate, onRefresh, setMessage, log, t
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#111', margin: 0 }}>Certificates</h3>
-        <button onClick={() => setShowUpload(s => !s)} style={{ padding: '8px 16px', background: showUpload ? '#F1F5F9' : '#2563EB', color: showUpload ? '#64748B' : '#fff', border: showUpload ? '1px solid #E2E8F0' : 'none', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700' }}>
+        <button onClick={() => setShowUpload(s => !s)} style={{ padding: '8px 16px', background: showUpload ? '#F1F5F9' : '#6D28D9', color: showUpload ? '#64748B' : '#fff', border: showUpload ? '1px solid #E2E8F0' : 'none', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700' }}>
           {showUpload ? '✕ Cancel' : '⬆ Upload for teacher'}
         </button>
       </div>
 
       {showUpload && (
-        <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #2563EB', overflow: 'hidden' }}>
-          <div style={{ background: '#2563EB', padding: '1rem 1.5rem' }}><h3 style={{ color: '#fff', fontSize: '14px', fontWeight: '700', margin: 0 }}>Upload certificate on behalf of teacher (auto-approved)</h3></div>
+        <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #6D28D9', overflow: 'hidden' }}>
+          <div style={{ background: '#6D28D9', padding: '1rem 1.5rem' }}><h3 style={{ color: '#fff', fontSize: '14px', fontWeight: '700', margin: 0 }}>Upload certificate on behalf of teacher (auto-approved)</h3></div>
           <form onSubmit={handleUpload} style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div><label style={formLbl}>Teacher *</label>
               <select style={{ ...formInp, cursor: 'pointer' }} value={uploadTeacherId} onChange={e => setUploadTeacherId(e.target.value)} required>
@@ -1232,7 +1232,7 @@ function CertificatesTab({ certificates, onUpdate, onRefresh, setMessage, log, t
                 {uploadFile && <p style={{ fontSize: '12px', color: '#166534', marginTop: '6px', fontWeight: '600', marginBottom: 0 }}>📎 {uploadFile.name}</p>}
               </div>
             </div>
-            <button type="submit" disabled={uploading || !uploadFile || !uploadCertName || !uploadTeacherId} style={{ padding: '10px', background: uploading ? '#E2E8F0' : '#2563EB', color: uploading ? '#64748B' : '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700' }}>
+            <button type="submit" disabled={uploading || !uploadFile || !uploadCertName || !uploadTeacherId} style={{ padding: '10px', background: uploading ? '#E2E8F0' : '#6D28D9', color: uploading ? '#64748B' : '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700' }}>
               {uploading ? '⏳ Uploading...' : '⬆ Upload & approve'}
             </button>
           </form>
@@ -1264,7 +1264,7 @@ function CertificatesTab({ certificates, onUpdate, onRefresh, setMessage, log, t
       {filtered.length === 0 ? <Empty text="No certificates match filters." /> : filtered.map(cert => {
         const isExpanded = expandedId === cert.id
         return (
-          <div key={cert.id} style={{ background: '#fff', borderRadius: '12px', border: `1px solid ${selected.has(cert.id) ? '#93C5FD' : isExpanded ? '#2563EB' : '#E2E8F0'}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+          <div key={cert.id} style={{ background: '#fff', borderRadius: '12px', border: `1px solid ${selected.has(cert.id) ? '#C4B5FD' : isExpanded ? '#6D28D9' : '#E2E8F0'}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 1.5rem', flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => setExpandedId(isExpanded ? null : cert.id)}>
               {cert.status === 'pending' && <input type="checkbox" checked={selected.has(cert.id)} onChange={e => { e.stopPropagation(); toggle(cert.id) }} onClick={e => e.stopPropagation()} style={{ width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0 }} />}
               <div style={{ flex: 1, minWidth: '200px' }}>
@@ -1272,7 +1272,7 @@ function CertificatesTab({ certificates, onUpdate, onRefresh, setMessage, log, t
                 <div style={{ fontSize: '13px', color: '#64748B' }}>👩‍🏫 {cert.teachers?.profiles?.full_name} · {cert.certificate_type === 'academic' ? '🎓 Academic' : '📋 Teaching'} · {new Date(cert.uploaded_at).toLocaleDateString()}</div>
               </div>
               <StatusBadge status={cert.status} />
-              <span style={{ fontSize: '13px', color: '#2563EB', fontWeight: '700' }}>{isExpanded ? '▲ Close' : '▼ Open to review'}</span>
+              <span style={{ fontSize: '13px', color: '#6D28D9', fontWeight: '700' }}>{isExpanded ? '▲ Close' : '▼ Open to review'}</span>
             </div>
             {isExpanded && (
               <div style={{ borderTop: '1px solid #E2E8F0', padding: '1.25rem 1.5rem', background: '#F8FAFC' }}>
@@ -1299,7 +1299,7 @@ function PhotoReviewsTab({ users, onApprove, onReject }) {
     <div style={{ flex: 1, textAlign: 'center' }}>
       <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>{label}</div>
       {url ? (
-        <img src={url} alt={label} style={{ width: '110px', height: '110px', borderRadius: '50%', objectFit: 'cover', border: `3px solid ${highlight ? '#2563EB' : '#E2E8F0'}`, display: 'block', margin: '0 auto' }} />
+        <img src={url} alt={label} style={{ width: '110px', height: '110px', borderRadius: '50%', objectFit: 'cover', border: `3px solid ${highlight ? '#6D28D9' : '#E2E8F0'}`, display: 'block', margin: '0 auto' }} />
       ) : (
         <div style={{ width: '110px', height: '110px', borderRadius: '50%', background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '38px', fontWeight: '700', color: '#94A3B8', border: '3px solid #E2E8F0', margin: '0 auto' }}>
           {initial || '—'}
@@ -1401,14 +1401,14 @@ function DocumentsTab({ documents, onUpdate, onRefresh, setMessage, log, teacher
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#111', margin: 0 }}>Documents</h3>
-        <button onClick={() => setShowUpload(s => !s)} style={{ padding: '8px 16px', background: showUpload ? '#F1F5F9' : '#2563EB', color: showUpload ? '#64748B' : '#fff', border: showUpload ? '1px solid #E2E8F0' : 'none', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700' }}>
+        <button onClick={() => setShowUpload(s => !s)} style={{ padding: '8px 16px', background: showUpload ? '#F1F5F9' : '#6D28D9', color: showUpload ? '#64748B' : '#fff', border: showUpload ? '1px solid #E2E8F0' : 'none', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700' }}>
           {showUpload ? '✕ Cancel' : '⬆ Upload for teacher'}
         </button>
       </div>
 
       {showUpload && (
-        <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #2563EB', overflow: 'hidden' }}>
-          <div style={{ background: '#2563EB', padding: '1rem 1.5rem' }}><h3 style={{ color: '#fff', fontSize: '14px', fontWeight: '700', margin: 0 }}>Upload document on behalf of teacher (auto-approved)</h3></div>
+        <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #6D28D9', overflow: 'hidden' }}>
+          <div style={{ background: '#6D28D9', padding: '1rem 1.5rem' }}><h3 style={{ color: '#fff', fontSize: '14px', fontWeight: '700', margin: 0 }}>Upload document on behalf of teacher (auto-approved)</h3></div>
           <form onSubmit={handleUpload} style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div><label style={formLbl}>Teacher *</label>
               <select style={{ ...formInp, cursor: 'pointer' }} value={uploadTeacherId} onChange={e => setUploadTeacherId(e.target.value)} required>
@@ -1427,7 +1427,7 @@ function DocumentsTab({ documents, onUpdate, onRefresh, setMessage, log, teacher
                 {uploadFile && <p style={{ fontSize: '12px', color: '#166534', marginTop: '6px', fontWeight: '600', marginBottom: 0 }}>📎 {uploadFile.name}</p>}
               </div>
             </div>
-            <button type="submit" disabled={uploading || !uploadFile || !uploadTeacherId} style={{ padding: '10px', background: uploading ? '#E2E8F0' : '#2563EB', color: uploading ? '#64748B' : '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700' }}>
+            <button type="submit" disabled={uploading || !uploadFile || !uploadTeacherId} style={{ padding: '10px', background: uploading ? '#E2E8F0' : '#6D28D9', color: uploading ? '#64748B' : '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700' }}>
               {uploading ? '⏳ Uploading...' : '⬆ Upload & approve'}
             </button>
           </form>
@@ -1447,14 +1447,14 @@ function DocumentsTab({ documents, onUpdate, onRefresh, setMessage, log, teacher
       {filtered.length === 0 ? <Empty text="No documents match filters." /> : filtered.map(doc => {
         const isExpanded = expandedId === doc.id
         return (
-          <div key={doc.id} style={{ background: '#fff', borderRadius: '12px', border: `1px solid ${isExpanded ? '#2563EB' : '#E2E8F0'}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+          <div key={doc.id} style={{ background: '#fff', borderRadius: '12px', border: `1px solid ${isExpanded ? '#6D28D9' : '#E2E8F0'}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 1.5rem', flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => setExpandedId(isExpanded ? null : doc.id)}>
               <div style={{ flex: 1, minWidth: '200px' }}>
                 <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '4px', color: '#111' }}>{doc.document_type}</div>
                 <div style={{ fontSize: '13px', color: '#64748B' }}>👩‍🏫 {doc.profiles?.full_name} · {new Date(doc.uploaded_at).toLocaleDateString()}</div>
               </div>
               <StatusBadge status={doc.status} />
-              <span style={{ fontSize: '13px', color: '#2563EB', fontWeight: '700' }}>{isExpanded ? '▲ Close' : '▼ Open to review'}</span>
+              <span style={{ fontSize: '13px', color: '#6D28D9', fontWeight: '700' }}>{isExpanded ? '▲ Close' : '▼ Open to review'}</span>
             </div>
             {isExpanded && (
               <div style={{ borderTop: '1px solid #E2E8F0', padding: '1.25rem 1.5rem', background: '#F8FAFC' }}>
@@ -1513,7 +1513,7 @@ function TeachersTab({ teachers, allReviews, allBookings, onVerify, onSuspend, o
           </div>
           {teacher.profiles?.status === 'suspended' && <StatusBadge status="suspended" />}
           <StatusBadge status={teacher.is_verified ? 'verified' : 'unverified'} />
-          <button onClick={() => setSelected(teacher)} style={{ padding: '7px 16px', background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '700' }}>View →</button>
+          <button onClick={() => setSelected(teacher)} style={{ padding: '7px 16px', background: '#F5F3FF', color: '#6D28D9', border: '1px solid #DDD6FE', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '700' }}>View →</button>
           {teacher.is_verified ? <button onClick={() => onVerify(teacher.id, false)} style={btnRed}>Unverify</button> : <button onClick={() => onVerify(teacher.id, true)} style={btnGreen}>Verify</button>}
           {teacher.profiles?.status === 'suspended'
             ? <button onClick={() => onSuspend(teacher.id, false)} style={btnGreen}>Unblock</button>
@@ -1577,7 +1577,7 @@ function UserRoleTab({ users, allBookings, onSuspend, onDelete, onUpdateProfile,
             <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>Joined {new Date(u.created_at).toLocaleDateString()}</div>
           </div>
           {u.status === 'suspended' && <StatusBadge status="suspended" />}
-          <button onClick={() => setSelected(u)} style={{ padding: '7px 16px', background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '700' }}>View →</button>
+          <button onClick={() => setSelected(u)} style={{ padding: '7px 16px', background: '#F5F3FF', color: '#6D28D9', border: '1px solid #DDD6FE', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '700' }}>View →</button>
           {u.status === 'suspended'
             ? <button onClick={() => onSuspend(u.id, false)} style={btnGreen}>Unblock</button>
             : <button onClick={() => setPendingAction({ title: `Suspend ${roleLabel}`, description: `This will prevent ${u.full_name} from accessing Stuumo.`, confirmLabel: '⏸ Suspend', style: btnYellow, onConfirm: (reason) => onSuspend(u.id, true, reason) })} style={btnYellow}>⏸ Suspend</button>
@@ -1658,7 +1658,7 @@ function UsersTab({ users, allBookings, onSuspend, onDelete, onRefresh, setMessa
         </div>
       </div>
       {filtered.map(u => (
-        <div key={u.id} style={{ background: '#fff', borderRadius: '12px', padding: '1rem 1.5rem', border: `1px solid ${selected.has(u.id) ? '#93C5FD' : '#E2E8F0'}`, display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div key={u.id} style={{ background: '#fff', borderRadius: '12px', padding: '1rem 1.5rem', border: `1px solid ${selected.has(u.id) ? '#C4B5FD' : '#E2E8F0'}`, display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <input type="checkbox" checked={selected.has(u.id)} onChange={() => toggle(u.id)} style={{ width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0 }} />
           <AdminAvatar name={u.full_name} url={u.avatar_url} />
           <div style={{ flex: 1, minWidth: '180px' }}>
@@ -1666,9 +1666,9 @@ function UsersTab({ users, allBookings, onSuspend, onDelete, onRefresh, setMessa
             <div style={{ fontSize: '13px', color: '#64748B' }}>{u.email} · 📍 {u.city}, {u.country}</div>
             <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>Joined {new Date(u.created_at).toLocaleDateString()}</div>
           </div>
-          <span style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '20px', fontWeight: '600', textTransform: 'capitalize', background: u.role === 'teacher' ? '#DBEAFE' : u.role === 'learner' ? '#DCFCE7' : '#F3E8FF', color: u.role === 'teacher' ? '#1E40AF' : u.role === 'learner' ? '#166534' : '#6B21A8' }}>{u.role}</span>
+          <span style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '20px', fontWeight: '600', textTransform: 'capitalize', background: u.role === 'teacher' ? '#EDE9FE' : u.role === 'learner' ? '#DCFCE7' : '#F3E8FF', color: u.role === 'teacher' ? '#5B21B6' : u.role === 'learner' ? '#166534' : '#6B21A8' }}>{u.role}</span>
           {u.status === 'suspended' && <StatusBadge status="suspended" />}
-          <button onClick={() => setViewUser(u)} style={{ padding: '7px 16px', background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '700' }}>View →</button>
+          <button onClick={() => setViewUser(u)} style={{ padding: '7px 16px', background: '#F5F3FF', color: '#6D28D9', border: '1px solid #DDD6FE', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '700' }}>View →</button>
           {u.status === 'suspended'
             ? <button onClick={() => onSuspend(u.id, false)} style={btnGreen}>Unblock</button>
             : <button onClick={() => setPendingAction({ title: 'Suspend User', description: 'This will prevent the user from accessing Stuumo.', confirmLabel: '⏸ Suspend', style: btnYellow, onConfirm: (reason) => onSuspend(u.id, true, reason) })} style={btnYellow}>⏸ Suspend</button>
@@ -1750,14 +1750,14 @@ function BookingsTab({ bookings, onMarkPayout, onUpdateStatus }) {
         <button onClick={() => exportCSV(filtered.map(b => ({ client: b.profiles?.full_name, teacher: b.teachers?.profiles?.full_name, subject: b.subject, status: b.status, scheduled: b.session_date ? `${b.session_date}${b.start_time ? ' ' + b.start_time.slice(0, 5) : ''}` : '', amount: b.amount, commission: b.commission_amount, payout: b.teacher_payout, payment: b.payment_status, payout_status: b.payout_status, date: b.created_at })), 'bookings.csv')} style={btnExport}>⬇ CSV</button>
       </div>
       {filtered.map(b => (
-        <div key={b.id} style={{ background: '#fff', borderRadius: '12px', padding: '1rem 1.5rem', border: `1px solid ${b.status === 'pending' ? '#93C5FD' : '#E2E8F0'}`, display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div key={b.id} style={{ background: '#fff', borderRadius: '12px', padding: '1rem 1.5rem', border: `1px solid ${b.status === 'pending' ? '#C4B5FD' : '#E2E8F0'}`, display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <div style={{ flex: 1, minWidth: '200px' }}>
             <div style={{ fontSize: '15px', fontWeight: '600', color: '#111', marginBottom: '4px' }}>{b.profiles?.full_name} → {b.teachers?.profiles?.full_name}</div>
             <div style={{ fontSize: '13px', color: '#64748B', marginBottom: '2px' }}>📚 {b.subject}</div>
-            {b.session_date && <div style={{ fontSize: '12px', color: '#2563EB', fontWeight: '700', marginBottom: '2px' }}>🗓️ {new Date(b.session_date + 'T00:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}{b.start_time ? ` · ${b.start_time.slice(0, 5)}` : ''}</div>}
+            {b.session_date && <div style={{ fontSize: '12px', color: '#6D28D9', fontWeight: '700', marginBottom: '2px' }}>🗓️ {new Date(b.session_date + 'T00:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}{b.start_time ? ` · ${b.start_time.slice(0, 5)}` : ''}</div>}
             <div style={{ fontSize: '12px', color: '#94A3B8' }}>{b.session_date ? 'Requested ' : ''}{new Date(b.created_at).toLocaleDateString()}</div>
           </div>
-          {b.amount > 0 && <div style={{ textAlign: 'right' }}><div style={{ fontSize: '15px', fontWeight: '700', color: '#2563EB' }}>GH₵ {b.amount}</div>{b.teacher_payout > 0 && <div style={{ fontSize: '11px', color: '#64748B' }}>Payout: GH₵ {(b.teacher_payout||0).toFixed(2)}</div>}</div>}
+          {b.amount > 0 && <div style={{ textAlign: 'right' }}><div style={{ fontSize: '15px', fontWeight: '700', color: '#6D28D9' }}>GH₵ {b.amount}</div>{b.teacher_payout > 0 && <div style={{ fontSize: '11px', color: '#64748B' }}>Payout: GH₵ {(b.teacher_payout||0).toFixed(2)}</div>}</div>}
           <StatusBadge status={b.status} />
           {b.status === 'pending' && <>
             <button onClick={() => onUpdateStatus(b.id, 'confirmed')} style={btnGreen}>✓ Accept</button>
@@ -1810,14 +1810,14 @@ function SessionsTab({ sessions, enrollCounts, onToggle, onUpdate, onCreate, tea
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#111', margin: 0 }}>Live Sessions</h3>
-        <button onClick={() => setShowCreate(s => !s)} style={{ padding: '9px 18px', background: showCreate ? '#F1F5F9' : '#2563EB', color: showCreate ? '#64748B' : '#fff', border: showCreate ? '1px solid #E2E8F0' : 'none', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700' }}>
+        <button onClick={() => setShowCreate(s => !s)} style={{ padding: '9px 18px', background: showCreate ? '#F1F5F9' : '#6D28D9', color: showCreate ? '#64748B' : '#fff', border: showCreate ? '1px solid #E2E8F0' : 'none', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700' }}>
           {showCreate ? '✕ Cancel' : '+ Create session for teacher'}
         </button>
       </div>
 
       {showCreate && (
-        <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #2563EB', overflow: 'hidden' }}>
-          <div style={{ background: '#2563EB', padding: '1rem 1.5rem' }}><h3 style={{ color: '#fff', fontSize: '15px', fontWeight: '700', margin: 0 }}>Create live session (visible on main app immediately)</h3></div>
+        <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #6D28D9', overflow: 'hidden' }}>
+          <div style={{ background: '#6D28D9', padding: '1rem 1.5rem' }}><h3 style={{ color: '#fff', fontSize: '15px', fontWeight: '700', margin: 0 }}>Create live session (visible on main app immediately)</h3></div>
           <form onSubmit={handleCreate} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div><label style={formLbl}>Teacher (verified only) *</label>
               <select style={{ ...formInp, cursor: 'pointer' }} value={createForm.teacher_id} onChange={e => setCreateForm(f => ({ ...f, teacher_id: e.target.value }))} required>
@@ -1838,7 +1838,7 @@ function SessionsTab({ sessions, enrollCounts, onToggle, onUpdate, onCreate, tea
               <div><label style={formLbl}>Max spots</label><input type="number" min="1" max="500" style={formInp} value={createForm.max_spots} onChange={e => setCreateForm(f => ({ ...f, max_spots: e.target.value }))} /></div>
               <div><label style={formLbl}>Price (GH₵) — 0 for free</label><input type="number" min="0" step="0.01" style={formInp} value={createForm.price} onChange={e => setCreateForm(f => ({ ...f, price: e.target.value }))} /></div>
             </div>
-            <button type="submit" disabled={creating || !createForm.teacher_id || !createForm.title || !createForm.session_date} style={{ padding: '12px', background: creating ? '#E2E8F0' : '#2563EB', color: creating ? '#64748B' : '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700' }}>
+            <button type="submit" disabled={creating || !createForm.teacher_id || !createForm.title || !createForm.session_date} style={{ padding: '12px', background: creating ? '#E2E8F0' : '#6D28D9', color: creating ? '#64748B' : '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700' }}>
               {creating ? 'Creating...' : '🎥 Create session — will appear on main app'}
             </button>
           </form>
@@ -1872,9 +1872,9 @@ function SessionsTab({ sessions, enrollCounts, onToggle, onUpdate, onCreate, tea
               <div style={{ fontSize: '13px', color: '#64748B', marginBottom: '2px' }}>👩‍🏫 {s.teachers?.profiles?.full_name} · 📚 {s.subject}</div>
               <div style={{ fontSize: '12px', color: '#94A3B8' }}>📅 {s.session_date} · 🕐 {s.start_time}–{s.end_time} · 👥 {enrolled}/{s.max_spots} · {spotsLeft > 0 ? `${spotsLeft} spots left` : 'Full'}</div>
             </div>
-            {s.price > 0 && <span style={{ fontSize: '14px', fontWeight: '700', color: '#2563EB' }}>GH₵ {s.price}</span>}
+            {s.price > 0 && <span style={{ fontSize: '14px', fontWeight: '700', color: '#6D28D9' }}>GH₵ {s.price}</span>}
             <span style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '20px', fontWeight: '600', background: s.session_date >= today ? '#DCFCE7' : '#F1F5F9', color: s.session_date >= today ? '#166534' : '#64748B' }}>{s.session_date >= today ? 'Upcoming' : 'Completed'}</span>
-            <button onClick={() => setSelectedSession(s)} style={{ padding: '7px 14px', background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '700' }}>View / Edit →</button>
+            <button onClick={() => setSelectedSession(s)} style={{ padding: '7px 14px', background: '#F5F3FF', color: '#6D28D9', border: '1px solid #DDD6FE', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '700' }}>View / Edit →</button>
             {s.deleted_at ? <button onClick={() => onToggle(s.id, false)} style={btnGreen}>Restore</button> : <button onClick={() => onToggle(s.id, true)} style={btnRed}>Hide</button>}
           </div>
         )
@@ -1901,7 +1901,7 @@ function PaymentsTab({ payments }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
         <StatCard icon="💰" label="Total GMV" value={`GH₵ ${total.toFixed(2)}`} color="#166534" />
-        <StatCard icon="📊" label="Platform commission" value={`GH₵ ${totalCommission.toFixed(2)}`} color="#2563EB" />
+        <StatCard icon="📊" label="Platform commission" value={`GH₵ ${totalCommission.toFixed(2)}`} color="#6D28D9" />
         <StatCard icon="✅" label="Successful" value={payments.filter(p => p.status === 'success').length} color="#166534" />
       </div>
       <input style={searchInp} placeholder="Search by reference..." value={search} onChange={e => setSearch(e.target.value)} />
@@ -1923,7 +1923,7 @@ function PaymentsTab({ payments }) {
             <div style={{ fontSize: '12px', color: '#94A3B8' }}>{new Date(p.created_at).toLocaleString()}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: '700', color: '#2563EB' }}>GH₵ {p.amount}</div>
+            <div style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: '700', color: '#6D28D9' }}>GH₵ {p.amount}</div>
             {p.commission_amount > 0 && <div style={{ fontSize: '11px', color: '#166534' }}>Commission: GH₵ {(p.commission_amount||0).toFixed(2)}</div>}
             {p.teacher_payout > 0 && <div style={{ fontSize: '11px', color: '#64748B' }}>Payout: GH₵ {(p.teacher_payout||0).toFixed(2)}</div>}
           </div>
@@ -1957,7 +1957,7 @@ function RefundsTab({ bookings, onMarkRefunded }) {
 
       <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '8px', border: '1px solid #E2E8F0', width: 'fit-content' }}>
         {[['pending', 'Owed'], ['refunded', 'Processed'], ['all', 'All']].map(([key, label]) => (
-          <button key={key} onClick={() => setF(key)} style={{ padding: '7px 18px', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', background: f === key ? '#2563EB' : 'transparent', color: f === key ? '#fff' : '#64748B', fontWeight: f === key ? '700' : '400' }}>{label}</button>
+          <button key={key} onClick={() => setF(key)} style={{ padding: '7px 18px', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', background: f === key ? '#6D28D9' : 'transparent', color: f === key ? '#fff' : '#64748B', fontWeight: f === key ? '700' : '400' }}>{label}</button>
         ))}
       </div>
 
@@ -2010,13 +2010,13 @@ function PayoutsTab({ bookings, onMarkPayout }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-        <StatCard icon="📊" label="Total commission earned" value={`GH₵ ${totalCommission.toFixed(2)}`} color="#2563EB" />
+        <StatCard icon="📊" label="Total commission earned" value={`GH₵ ${totalCommission.toFixed(2)}`} color="#6D28D9" />
         <StatCard icon="⏳" label="Pending payouts" value={`GH₵ ${totalPending.toFixed(2)}`} color="#854D0E" />
         <StatCard icon="✅" label="Processed payouts" value={`GH₵ ${totalPaid.toFixed(2)}`} color="#166534" />
       </div>
       <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '8px', border: '1px solid #E2E8F0', width: 'fit-content' }}>
         {[['pending','Pending'],['paid','Paid out'],['all','All']].map(([key,label]) => (
-          <button key={key} onClick={() => setF(p => ({ ...p, status: key }))} style={{ padding: '7px 18px', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', background: f.status === key ? '#2563EB' : 'transparent', color: f.status === key ? '#fff' : '#64748B', fontWeight: f.status === key ? '700' : '400' }}>{label}</button>
+          <button key={key} onClick={() => setF(p => ({ ...p, status: key }))} style={{ padding: '7px 18px', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', background: f.status === key ? '#6D28D9' : 'transparent', color: f.status === key ? '#fff' : '#64748B', fontWeight: f.status === key ? '700' : '400' }}>{label}</button>
         ))}
       </div>
       <input style={searchInp} placeholder="Search by teacher or subject..." value={f.search} onChange={e => setF(p => ({ ...p, search: e.target.value }))} />
@@ -2062,7 +2062,7 @@ function ReferralsTab({ referrals, onUpdate }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-        <StatCard icon="🎁" label="Total referrals" value={referrals.length} color="#2563EB" />
+        <StatCard icon="🎁" label="Total referrals" value={referrals.length} color="#6D28D9" />
         <StatCard icon="⏳" label="Pending rewards" value={referrals.filter(r => r.reward_status === 'pending').length} color="#854D0E" />
         <StatCard icon="✅" label="Paid rewards" value={referrals.filter(r => r.reward_status === 'paid').length} color="#166534" />
       </div>
@@ -2133,7 +2133,7 @@ function OnboardingTab({ teachers, allReviews, allBookings }) {
           </div>
           <StatusBadge status="pending" />
           <StatusBadge status={t.is_verified ? 'verified' : 'unverified'} />
-          <button onClick={() => setSelected(t)} style={{ padding: '7px 16px', background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '700' }}>View →</button>
+          <button onClick={() => setSelected(t)} style={{ padding: '7px 16px', background: '#F5F3FF', color: '#6D28D9', border: '1px solid #DDD6FE', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '700' }}>View →</button>
         </div>
       ))}
     </div>
@@ -2142,7 +2142,7 @@ function OnboardingTab({ teachers, allReviews, allBookings }) {
 
 function QualityTab({ teachers }) {
   const [f, setF] = useState({ search: '', minScore: '', maxScore: '', verified: 'all', period: 'all' })
-  const scoreColor = (score) => score >= 75 ? { bg: '#DCFCE7', color: '#166534' } : score >= 50 ? { bg: '#DBEAFE', color: '#1E40AF' } : score >= 25 ? { bg: '#FEF9C3', color: '#854D0E' } : { bg: '#FEE2E2', color: '#991B1B' }
+  const scoreColor = (score) => score >= 75 ? { bg: '#DCFCE7', color: '#166534' } : score >= 50 ? { bg: '#EDE9FE', color: '#5B21B6' } : score >= 25 ? { bg: '#FEF9C3', color: '#854D0E' } : { bg: '#FEE2E2', color: '#991B1B' }
   const scoreLabel = (s) => s >= 75 ? 'Excellent' : s >= 50 ? 'Good' : s >= 25 ? 'Fair' : 'Low'
   const filtered = teachers.filter(t => {
     if (f.search && !t.profiles?.full_name?.toLowerCase().includes(f.search.toLowerCase())) return false
@@ -2154,7 +2154,7 @@ function QualityTab({ teachers }) {
   })
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <div style={{ background: '#EFF6FF', borderRadius: '10px', padding: '1rem 1.25rem', border: '1px solid #BFDBFE', fontSize: '14px', color: '#1E40AF' }}>
+      <div style={{ background: '#F5F3FF', borderRadius: '10px', padding: '1rem 1.25rem', border: '1px solid #DDD6FE', fontSize: '14px', color: '#5B21B6' }}>
         📊 Score formula: Reviews (40pts) + Confirmed bookings (30pts) + Approved certificates (20pts) + Verified (10pts)
       </div>
       <FilterBar filters={[
@@ -2250,7 +2250,7 @@ function FlagsTab({ flags, onUpdate, onRefresh, setMessage, log }) {
         <button onClick={() => exportCSV(filtered.map(fl => ({ type: fl.target_type, reason: fl.reason, reporter: fl.reporter?.full_name, status: fl.status, date: fl.created_at })), 'flags.csv')} style={btnExport}>⬇ CSV</button>
       </div>
       {filtered.length === 0 ? <Empty text={f.status === 'pending' ? '🎉 No pending flags.' : 'No flags found.'} /> : filtered.map(fl => (
-        <div key={fl.id} style={{ background: fl.status === 'pending' ? '#FFF5F5' : '#fff', borderRadius: '12px', padding: '1.25rem 1.5rem', border: `1px solid ${selected.has(fl.id) ? '#93C5FD' : fl.status === 'pending' ? '#FECACA' : '#E2E8F0'}`, display: 'flex', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
+        <div key={fl.id} style={{ background: fl.status === 'pending' ? '#FFF5F5' : '#fff', borderRadius: '12px', padding: '1.25rem 1.5rem', border: `1px solid ${selected.has(fl.id) ? '#C4B5FD' : fl.status === 'pending' ? '#FECACA' : '#E2E8F0'}`, display: 'flex', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
           {fl.status === 'pending' && <input type="checkbox" checked={selected.has(fl.id)} onChange={() => toggle(fl.id)} style={{ width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0, marginTop: '3px' }} />}
           <div style={{ flex: 1, minWidth: '200px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
@@ -2317,7 +2317,7 @@ function RevenueTab({ payments, bookings, allUsers, teachers }) {
         <StatCard icon="💰" label="Gross GMV (overall)" value={`GH₵ ${totalGMV.toFixed(2)}`} color="#64748B" />
         <StatCard icon="↩️" label="Refunds" value={`GH₵ ${totalRefunds.toFixed(2)}`} color="#991B1B" />
         <StatCard icon="✅" label="Net GMV" value={`GH₵ ${netGMV.toFixed(2)}`} color="#166534" />
-        <StatCard icon="📊" label="Commission" value={`GH₵ ${totalCommission.toFixed(2)}`} color="#2563EB" />
+        <StatCard icon="📊" label="Commission" value={`GH₵ ${totalCommission.toFixed(2)}`} color="#6D28D9" />
         <StatCard icon="👩‍🏫" label="Teacher payouts" value={`GH₵ ${totalPayout.toFixed(2)}`} color="#7C3AED" />
         <StatCard icon="📈" label="Avg booking value" value={`GH₵ ${avgValue}`} color="#D97706" />
       </div>
@@ -2331,7 +2331,7 @@ function RevenueTab({ payments, bookings, allUsers, teachers }) {
               <YAxis tick={{ fill: '#64748B', fontSize: 12 }} />
               <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '8px', color: '#111' }} />
               <Legend wrapperStyle={{ color: '#475569', fontSize: '12px' }} />
-              <Bar dataKey="gmv" fill="#2563EB" radius={[4,4,0,0]} name="GMV (GH₵)" />
+              <Bar dataKey="gmv" fill="#6D28D9" radius={[4,4,0,0]} name="GMV (GH₵)" />
               <Bar dataKey="commission" fill="#16A34A" radius={[4,4,0,0]} name="Commission (GH₵)" />
             </BarChart>
           </ResponsiveContainer>
@@ -2353,7 +2353,7 @@ function RevenueTab({ payments, bookings, allUsers, teachers }) {
                   <td style={{ padding: '10px 14px', fontSize: '14px', fontWeight: '700', color: '#166534' }}>GH₵ {s.revenue.toFixed(2)}</td>
                   <td style={{ padding: '10px 14px', fontSize: '13px', color: '#64748B' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ flex: 1, height: '5px', background: '#E2E8F0', borderRadius: '3px', overflow: 'hidden', maxWidth: '80px' }}><div style={{ height: '100%', width: `${(s.revenue/(subjectRows[0]?.revenue||1))*100}%`, background: '#2563EB', borderRadius: '3px' }} /></div>
+                      <div style={{ flex: 1, height: '5px', background: '#E2E8F0', borderRadius: '3px', overflow: 'hidden', maxWidth: '80px' }}><div style={{ height: '100%', width: `${(s.revenue/(subjectRows[0]?.revenue||1))*100}%`, background: '#6D28D9', borderRadius: '3px' }} /></div>
                       {totalGMV > 0 ? `${((s.revenue/totalGMV)*100).toFixed(1)}%` : '—'}
                     </div>
                   </td>
@@ -2391,17 +2391,17 @@ function GeographyTab({ users, teachers }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '8px', border: '1px solid #E2E8F0', width: 'fit-content' }}>
         {[['users','All Users'],['teachers','Teachers']].map(([key,label]) => (
-          <button key={key} onClick={() => setView(key)} style={{ padding: '7px 18px', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', background: view === key ? '#2563EB' : 'transparent', color: view === key ? '#fff' : '#64748B', fontWeight: view === key ? '700' : '400' }}>{label}</button>
+          <button key={key} onClick={() => setView(key)} style={{ padding: '7px 18px', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', background: view === key ? '#6D28D9' : 'transparent', color: view === key ? '#fff' : '#64748B', fontWeight: view === key ? '700' : '400' }}>{label}</button>
         ))}
       </div>
       {view === 'users' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-          <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #E2E8F0' }}><h3 style={{ fontSize: '15px', fontWeight: '700', color: '#111', marginBottom: '1.25rem' }}>🌍 Users by country</h3><BarList data={countBy(users, 'country')} color="#2563EB" /></div>
+          <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #E2E8F0' }}><h3 style={{ fontSize: '15px', fontWeight: '700', color: '#111', marginBottom: '1.25rem' }}>🌍 Users by country</h3><BarList data={countBy(users, 'country')} color="#6D28D9" /></div>
           <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #E2E8F0' }}><h3 style={{ fontSize: '15px', fontWeight: '700', color: '#111', marginBottom: '1.25rem' }}>🏙️ Users by city</h3><BarList data={countBy(users, 'city')} color="#16A34A" /></div>
           <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #E2E8F0', gridColumn: '1 / -1' }}>
             <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#111', marginBottom: '1rem' }}>📊 Role breakdown</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-              {[['Teachers',users.filter(u=>u.role==='teacher').length,'#2563EB','#DBEAFE'],['Learners',users.filter(u=>u.role==='learner').length,'#166534','#DCFCE7'],['Parents',users.filter(u=>u.role==='parent').length,'#6B21A8','#F3E8FF']].map(([label,value,color,bg]) => (
+              {[['Teachers',users.filter(u=>u.role==='teacher').length,'#6D28D9','#EDE9FE'],['Learners',users.filter(u=>u.role==='learner').length,'#166534','#DCFCE7'],['Parents',users.filter(u=>u.role==='parent').length,'#6B21A8','#F3E8FF']].map(([label,value,color,bg]) => (
                 <div key={label} style={{ background: bg, borderRadius: '10px', padding: '1rem', textAlign: 'center' }}>
                   <div style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: '700', color }}>{value}</div>
                   <div style={{ fontSize: '13px', color, marginTop: '4px', fontWeight: '600' }}>{label}</div>
@@ -2414,12 +2414,12 @@ function GeographyTab({ users, teachers }) {
       )}
       {view === 'teachers' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-          <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #E2E8F0' }}><h3 style={{ fontSize: '15px', fontWeight: '700', color: '#111', marginBottom: '1.25rem' }}>🌍 Teachers by country</h3><BarList data={countByNested(teachers,'country')} color="#2563EB" /></div>
+          <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #E2E8F0' }}><h3 style={{ fontSize: '15px', fontWeight: '700', color: '#111', marginBottom: '1.25rem' }}>🌍 Teachers by country</h3><BarList data={countByNested(teachers,'country')} color="#6D28D9" /></div>
           <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #E2E8F0' }}><h3 style={{ fontSize: '15px', fontWeight: '700', color: '#111', marginBottom: '1.25rem' }}>🏙️ Teachers by city</h3><BarList data={countByNested(teachers,'city')} color="#D97706" /></div>
           <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #E2E8F0', gridColumn: '1 / -1' }}>
             <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#111', marginBottom: '1rem' }}>📚 Top subjects</h3>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {(() => { const sc = {}; teachers.forEach(t => { (t.subjects||[]).forEach(s => { sc[s]=(sc[s]||0)+1 }) }); return Object.entries(sc).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([s,c]) => <span key={s} style={{ fontSize: '13px', padding: '4px 12px', borderRadius: '20px', background: '#DBEAFE', color: '#1E40AF', fontWeight: '600' }}>{s} ({c})</span>) })()}
+              {(() => { const sc = {}; teachers.forEach(t => { (t.subjects||[]).forEach(s => { sc[s]=(sc[s]||0)+1 }) }); return Object.entries(sc).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([s,c]) => <span key={s} style={{ fontSize: '13px', padding: '4px 12px', borderRadius: '20px', background: '#EDE9FE', color: '#5B21B6', fontWeight: '600' }}>{s} ({c})</span>) })()}
             </div>
           </div>
         </div>
@@ -2460,7 +2460,7 @@ function AnnouncementsTab({ announcements, adminId, onRefresh }) {
               <option value="parent">Parents only</option>
             </select>
           </div>
-          <button onClick={send} disabled={sending || !title.trim() || !body.trim()} style={{ padding: '11px 24px', background: '#2563EB', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontWeight: '700', fontFamily: 'inherit', width: 'fit-content', opacity: (!title.trim()||!body.trim()) ? 0.5 : 1 }}>
+          <button onClick={send} disabled={sending || !title.trim() || !body.trim()} style={{ padding: '11px 24px', background: '#6D28D9', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontWeight: '700', fontFamily: 'inherit', width: 'fit-content', opacity: (!title.trim()||!body.trim()) ? 0.5 : 1 }}>
             {sending ? 'Publishing...' : 'Publish announcement'}
           </button>
         </div>
@@ -2474,7 +2474,7 @@ function AnnouncementsTab({ announcements, adminId, onRefresh }) {
                 <div>
                   <div style={{ fontSize: '15px', fontWeight: '700', color: '#111', marginBottom: '4px' }}>{a.title}</div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '20px', fontWeight: '600', background: '#DBEAFE', color: '#1E40AF', textTransform: 'capitalize' }}>{a.target_role === 'all' ? 'Everyone' : a.target_role + 's'}</span>
+                    <span style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '20px', fontWeight: '600', background: '#EDE9FE', color: '#5B21B6', textTransform: 'capitalize' }}>{a.target_role === 'all' ? 'Everyone' : a.target_role + 's'}</span>
                     <span style={{ fontSize: '12px', color: '#94A3B8' }}>{new Date(a.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
@@ -2525,7 +2525,7 @@ function AuditTab({ logs, allUsers }) {
     if (a.includes('deleted')||a.includes('removed')) return { bg: '#FEE2E2', color: '#991B1B' }
     if (a.includes('suspended')||a.includes('hidden')||a.includes('declined')) return { bg: '#FEF9C3', color: '#854D0E' }
     if (a.includes('approved')||a.includes('verified')||a.includes('paid')||a.includes('unblocked')||a.includes('restored')) return { bg: '#DCFCE7', color: '#166534' }
-    if (a.includes('edited')||a.includes('updated')||a.includes('created')) return { bg: '#DBEAFE', color: '#1E40AF' }
+    if (a.includes('edited')||a.includes('updated')||a.includes('created')) return { bg: '#EDE9FE', color: '#5B21B6' }
     return { bg: '#F1F5F9', color: '#64748B' }
   }
 
@@ -2562,7 +2562,7 @@ function AuditTab({ logs, allUsers }) {
                     <div style={{ fontSize: '14px', fontWeight: '600', color: '#111' }}>{u.full_name}</div>
                     <div style={{ fontSize: '12px', color: '#64748B' }}>{u.email} · {u.phone || '—'}</div>
                   </div>
-                  <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', fontWeight: '600', textTransform: 'capitalize', background: u.role === 'teacher' ? '#DBEAFE' : u.role === 'learner' ? '#DCFCE7' : '#F3E8FF', color: u.role === 'teacher' ? '#1E40AF' : u.role === 'learner' ? '#166534' : '#6B21A8', flexShrink: 0 }}>{u.role}</span>
+                  <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', fontWeight: '600', textTransform: 'capitalize', background: u.role === 'teacher' ? '#EDE9FE' : u.role === 'learner' ? '#DCFCE7' : '#F3E8FF', color: u.role === 'teacher' ? '#5B21B6' : u.role === 'learner' ? '#166534' : '#6B21A8', flexShrink: 0 }}>{u.role}</span>
                 </div>
               ))}
             </div>
@@ -2575,13 +2575,13 @@ function AuditTab({ logs, allUsers }) {
         </div>
 
         {selectedUser && (
-          <div style={{ marginTop: '12px', padding: '12px 14px', background: '#EFF6FF', borderRadius: '10px', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ marginTop: '12px', padding: '12px 14px', background: '#F5F3FF', borderRadius: '10px', border: '1px solid #DDD6FE', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <AdminAvatar name={selectedUser.full_name} url={selectedUser.avatar_url} size={36} />
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '14px', fontWeight: '700', color: '#1E40AF' }}>{selectedUser.full_name}</div>
-              <div style={{ fontSize: '12px', color: '#2563EB', opacity: 0.8 }}>{selectedUser.email} · {selectedUser.role} · {selectedUser.city}, {selectedUser.country}</div>
+              <div style={{ fontSize: '14px', fontWeight: '700', color: '#5B21B6' }}>{selectedUser.full_name}</div>
+              <div style={{ fontSize: '12px', color: '#6D28D9', opacity: 0.8 }}>{selectedUser.email} · {selectedUser.role} · {selectedUser.city}, {selectedUser.country}</div>
             </div>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: '#1E40AF' }}>{filtered.length} log{filtered.length !== 1 ? 's' : ''} found</span>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: '#5B21B6' }}>{filtered.length} log{filtered.length !== 1 ? 's' : ''} found</span>
           </div>
         )}
       </div>
@@ -2622,7 +2622,7 @@ function AuditTab({ logs, allUsers }) {
                   </div>
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ fontSize: '13px', color: '#2563EB', fontWeight: '600' }}>{l.admins?.full_name || 'Admin'}</div>
+                  <div style={{ fontSize: '13px', color: '#6D28D9', fontWeight: '600' }}>{l.admins?.full_name || 'Admin'}</div>
                   <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>{new Date(l.created_at).toLocaleString()}</div>
                 </div>
               </div>
@@ -2646,7 +2646,7 @@ const btnGreen  = { padding: '6px 12px', background: '#DCFCE7', color: '#166534'
 const btnRed    = { padding: '6px 12px', background: '#FEE2E2', color: '#991B1B', border: '1px solid #FECACA', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: '700', fontFamily: 'inherit' }
 const btnYellow = { padding: '6px 12px', background: '#FEF9C3', color: '#854D0E', border: '1px solid #FDE68A', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: '700', fontFamily: 'inherit' }
 const btnGhost  = { padding: '6px 12px', background: '#F8FAFC', color: '#64748B', border: '1px solid #E2E8F0', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: '600', fontFamily: 'inherit' }
-const btnExport = { padding: '6px 14px', background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: '700', fontFamily: 'inherit' }
+const btnExport = { padding: '6px 14px', background: '#F5F3FF', color: '#6D28D9', border: '1px solid #DDD6FE', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: '700', fontFamily: 'inherit' }
 const searchInp = { width: '100%', padding: '10px 14px', background: '#fff', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '14px', color: '#111', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }
 const formLbl   = { fontSize: '12px', color: '#64748B', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }
 const formInp   = { width: '100%', padding: '10px 14px', background: '#fff', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '14px', color: '#111', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }

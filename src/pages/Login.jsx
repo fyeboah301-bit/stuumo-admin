@@ -25,7 +25,7 @@ export default function Login() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Sans, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Tahoma, Geneva, sans-serif' }}>
       <div style={{ width: '100%', maxWidth: '400px', padding: '1.5rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ fontFamily: "'Roboto Serif', Georgia, serif", fontSize: '30px', fontWeight: '700', color: '#fff' }}>
@@ -50,7 +50,7 @@ export default function Login() {
               <label style={lbl}>Password</label>
               <input style={inp} type="password" placeholder="Your password" value={password} onChange={e => setPassword(e.target.value)} required />
             </div>
-            <button type="submit" disabled={loading} style={{ padding: '12px', background: '#2563EB', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', cursor: 'pointer', fontWeight: '600', marginTop: '0.5rem' }}>
+            <button type="submit" disabled={loading} style={{ padding: '12px', background: '#6D28D9', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', cursor: 'pointer', fontWeight: '600', marginTop: '0.5rem' }}>
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
