@@ -239,7 +239,7 @@ function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, 
     ]}
   ]
   return (
-    <aside style={{ width: '220px', background: '#1E293B', flexShrink: 0, display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
+    <aside style={{ width: '220px', background: '#4C1D95', flexShrink: 0, display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
       <div style={{ flex: 1, padding: '8px' }}>
         {groups.map((group, gi) => (
           <div key={gi} style={{ marginBottom: '4px' }}>
@@ -1009,14 +1009,14 @@ export default function Dashboard() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'Tahoma, Geneva, sans-serif', color: '#111', display: 'flex', flexDirection: 'column' }}>
-      <nav style={{ background: '#1E293B', borderBottom: '1px solid #334155', padding: '0.875rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, zIndex: 10 }}>
+      <nav style={{ background: '#6D28D9', borderBottom: '1px solid rgba(255,255,255,0.15)', padding: '0.875rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ fontFamily: "'Roboto Serif', Georgia, serif", fontSize: '22px', fontWeight: '700', color: '#fff' }}>Stuumo</div>
-          <span style={{ fontSize: '11px', background: '#6D28D9', color: '#fff', padding: '2px 10px', borderRadius: '20px', fontWeight: '700' }}>ADMIN</span>
+          <span style={{ fontSize: '11px', background: '#FFFFFF', color: '#6D28D9', padding: '2px 10px', borderRadius: '20px', fontWeight: '700' }}>ADMIN</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span style={{ fontSize: '13px', color: '#94A3B8' }}>{admin?.full_name}</span>
-          <button onClick={async () => { await signOut(); navigate('/login') }} style={{ padding: '7px 16px', background: 'transparent', border: '1px solid #334155', color: '#94A3B8', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}>Sign out</button>
+          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)' }}>{admin?.full_name}</span>
+          <button onClick={async () => { await signOut(); navigate('/login') }} style={{ padding: '7px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.35)', color: '#fff', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}>Sign out</button>
         </div>
       </nav>
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>

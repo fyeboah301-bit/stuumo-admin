@@ -25,7 +25,7 @@ export default function Login() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Tahoma, Geneva, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #4C1D95 0%, #2A1150 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Tahoma, Geneva, sans-serif' }}>
       <div style={{ width: '100%', maxWidth: '400px', padding: '1.5rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ fontFamily: "'Roboto Serif', Georgia, serif", fontSize: '30px', fontWeight: '700', color: '#fff' }}>
@@ -34,7 +34,7 @@ export default function Login() {
           <p style={{ color: '#94A3B8', fontSize: '13px', marginTop: '4px' }}>Admin Platform</p>
         </div>
 
-        <div style={{ background: '#1E293B', borderRadius: '12px', padding: '2rem', border: '1px solid #334155' }}>
+        <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '12px', padding: '2rem', border: '1px solid rgba(255,255,255,0.14)' }}>
           <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: '600', marginBottom: '1.5rem' }}>Sign in to admin</h2>
           {error && (
             <div style={{ background: '#450A0A', color: '#FCA5A5', padding: '12px', borderRadius: '8px', fontSize: '13px', marginBottom: '1rem' }}>
@@ -61,4 +61,4 @@ export default function Login() {
 }
 
 const lbl = { fontSize: '12px', fontWeight: '600', color: '#94A3B8', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }
-const inp = { width: '100%', padding: '10px 12px', background: '#0F172A', border: '1px solid #334155', borderRadius: '8px', fontSize: '14px', color: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }
+const inp = { width: '100%', padding: '10px 12px', background: 'rgba(0,0,0,0.22)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '8px', fontSize: '14px', color: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }
