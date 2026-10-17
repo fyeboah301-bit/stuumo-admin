@@ -28,8 +28,8 @@ export default function Login() {
     <div style={{ minHeight: '100vh', background: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Sans, sans-serif' }}>
       <div style={{ width: '100%', maxWidth: '400px', padding: '1.5rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: '700', color: '#fff' }}>
-            Teach<span style={{ color: '#FFD700' }}>Me</span>
+          <div style={{ fontFamily: "'Roboto Serif', Georgia, serif", fontSize: '30px', fontWeight: '700', color: '#fff' }}>
+            Stuumo
           </div>
           <p style={{ color: '#94A3B8', fontSize: '13px', marginTop: '4px' }}>Admin Platform</p>
         </div>

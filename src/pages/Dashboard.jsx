@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useAdmin } from '../context/AdminContext'
 import { supabase } from '../lib/supabase'
+
+const sendEmail = async (payload) => {
+  try { await supabase.functions.invoke('send-booking-email', { body: payload }) }
+  catch (err) { console.log('Email error:', err) }
+}
 import { useNavigate } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
@@ -124,7 +129,7 @@ function StatusBadge({ status }) {
     resolved: { bg: '#DCFCE7', color: '#166534' }, dismissed: { bg: '#F1F5F9', color: '#64748B' },
     hidden: { bg: '#FEE2E2', color: '#991B1B' }, unverified: { bg: '#FEF9C3', color: '#854D0E' },
     confirmed: { bg: '#DCFCE7', color: '#166534' }, success: { bg: '#DCFCE7', color: '#166534' },
-    failed: { bg: '#FEE2E2', color: '#991B1B' },
+    failed: { bg: '#FEE2E2', color: '#991B1B' }, cancelled: { bg: '#F1F5F9', color: '#64748B' },
   }
   const style = map[status?.toLowerCase()] || { bg: '#F1F5F9', color: '#64748B' }
   return <span style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '20px', fontWeight: '600', background: style.bg, color: style.color, textTransform: 'capitalize', whiteSpace: 'nowrap' }}>{status}</span>
@@ -158,6 +163,35 @@ function StatCard({ icon, label, value, color }) {
   )
 }
 
+// Resolve a teacher_documents.file_url for viewing. New IDs are a path in the private
+// `teacher-ids` bucket; legacy rows stored a full public URL (kept working).
+async function resolvePrivateDoc(fileUrl) {
+  if (!fileUrl) return null
+  if (/^https?:\/\//i.test(fileUrl)) return fileUrl
+  const { data, error } = await supabase.storage.from('teacher-ids').createSignedUrl(fileUrl, 120)
+  if (error) throw error
+  return data?.signedUrl || null
+}
+
+function DocViewBtn({ fileUrl, name, label = '📄 View document' }) {
+  const [url, setUrl] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const open = async () => {
+    setLoading(true)
+    try { const u = await resolvePrivateDoc(fileUrl); setUrl(u) }
+    catch (e) { alert('Could not open document') }
+    finally { setLoading(false) }
+  }
+  return (
+    <>
+      <button onClick={open} style={{ fontSize: '12px', color: '#2563EB', fontWeight: '700', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+        {loading ? '…' : label}
+      </button>
+      {url && <FilePreviewModal url={url} name={name} onClose={() => setUrl(null)} />}
+    </>
+  )
+}
+
 function ViewFileBtn({ url, name, label = 'View' }) {
   const [preview, setPreview] = useState(false)
   return (
@@ -170,13 +204,14 @@ function ViewFileBtn({ url, name, label = 'View' }) {
   )
 }
 
-function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, pendingFlags, pendingPayouts, incompletCount }) {
+function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, pendingPhotos, pendingFlags, pendingPayouts, pendingRefunds, incompletCount }) {
   const groups = [
     { label: null, items: [{ key: 'overview', icon: '📊', label: 'Overview' }] },
     { label: 'People', items: [
       { key: 'applications', icon: '🚀', label: 'Applications', badge: pendingApplications || null },
       { key: 'certificates', icon: '📋', label: 'Certificates', badge: pendingCerts || null },
       { key: 'documents', icon: '🪪', label: 'Documents', badge: pendingDocs || null },
+      { key: 'photos', icon: '🖼️', label: 'Photo Reviews', badge: pendingPhotos || null },
       { key: 'teachers', icon: '👩‍🏫', label: 'Teachers' },
       { key: 'learners', icon: '📚', label: 'Learners' },
       { key: 'parents', icon: '👨‍👩‍👧', label: 'Parents' },
@@ -190,6 +225,7 @@ function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, 
     { label: 'Finance', items: [
       { key: 'payments', icon: '💳', label: 'Payments' },
       { key: 'payouts', icon: '💰', label: 'Payouts', badge: pendingPayouts || null },
+      { key: 'refunds', icon: '↩️', label: 'Refunds', badge: pendingRefunds || null, badgeRed: true },
       { key: 'referrals', icon: '🎁', label: 'Referrals' },
     ]},
     { label: 'Platform', items: [
@@ -271,10 +307,9 @@ function ApplicationDetail({ teacher, onApprove, onReject }) {
     setUploading(true)
     try {
       const fileName = `${teacher.id}/${Date.now()}.${docFile.name.split('.').pop()}`
-      const { error } = await supabase.storage.from('documents').upload(fileName, docFile)
+      const { error } = await supabase.storage.from('teacher-ids').upload(fileName, docFile)
       if (error) throw error
-      const { data: urlData } = supabase.storage.from('documents').getPublicUrl(fileName)
-      await supabase.from('teacher_documents').insert({ teacher_id: teacher.id, document_type: docType, file_url: urlData.publicUrl, status: 'approved' })
+      await supabase.from('teacher_documents').insert({ teacher_id: teacher.id, document_type: docType, file_url: fileName, status: 'approved' })
       setDocFile(null); setUploadMsg('✅ Document uploaded and approved.')
       const { data: d } = await supabase.from('teacher_documents').select('*').eq('teacher_id', teacher.id).order('uploaded_at', { ascending: false })
       setDocs(d || [])
@@ -396,7 +431,7 @@ function ApplicationDetail({ teacher, onApprove, onReject }) {
               <span style={{ fontSize: '18px' }}>🪪</span>
               <div style={{ flex: 1 }}><div style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>{doc.document_type}</div><div style={{ fontSize: '12px', color: '#64748B' }}>{new Date(doc.uploaded_at).toLocaleDateString()}</div></div>
               <StatusBadge status={doc.status} />
-              <ViewFileBtn url={doc.file_url} name={doc.document_type} />
+              <DocViewBtn fileUrl={doc.file_url} name={doc.document_type} label="View" />
             </div>
           ))}
       </DrawerSection>
@@ -474,7 +509,7 @@ function ApplicationDetail({ teacher, onApprove, onReject }) {
         <div style={{ borderTop: '2px solid #E2E8F0', paddingTop: '1.25rem' }}>
           {!showRejectForm ? (
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={() => onApprove(teacher.id, teacher.profiles?.full_name, teacher.id)} style={{ flex: 1, padding: '12px', background: '#DCFCE7', color: '#166534', border: '2px solid #BBF7D0', borderRadius: '10px', fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700' }}>✓ Approve</button>
+              <button onClick={() => onApprove(teacher.id, teacher.profiles?.full_name, teacher.id, teacher.profiles?.email)} style={{ flex: 1, padding: '12px', background: '#DCFCE7', color: '#166534', border: '2px solid #BBF7D0', borderRadius: '10px', fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700' }}>✓ Approve</button>
               <button onClick={() => setShowRejectForm(true)} style={{ flex: 1, padding: '12px', background: '#FEE2E2', color: '#991B1B', border: '2px solid #FECACA', borderRadius: '10px', fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700' }}>✗ Reject</button>
             </div>
           ) : (
@@ -483,7 +518,7 @@ function ApplicationDetail({ teacher, onApprove, onReject }) {
               <textarea style={{ width: '100%', padding: '10px 14px', border: '1px solid #E2E8F0', borderRadius: '8px', fontSize: '14px', fontFamily: 'inherit', outline: 'none', height: '80px', resize: 'vertical', boxSizing: 'border-box', marginBottom: '10px', background: '#fff', color: '#111' }} placeholder="e.g. Missing valid teaching certificate..." value={rejectNotes} onChange={e => setRejectNotes(e.target.value)} />
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => setShowRejectForm(false)} style={{ padding: '10px 18px', background: '#fff', border: '1px solid #E2E8F0', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', color: '#64748B' }}>Cancel</button>
-                <button onClick={() => { onReject(teacher.id, teacher.profiles?.full_name, teacher.id, rejectNotes); setShowRejectForm(false) }} disabled={!rejectNotes.trim()} style={{ flex: 1, padding: '10px', background: rejectNotes.trim() ? '#EF4444' : '#E2E8F0', color: rejectNotes.trim() ? '#fff' : '#94A3B8', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: rejectNotes.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit', fontWeight: '700' }}>Confirm rejection</button>
+                <button onClick={() => { onReject(teacher.id, teacher.profiles?.full_name, teacher.id, rejectNotes, teacher.profiles?.email); setShowRejectForm(false) }} disabled={!rejectNotes.trim()} style={{ flex: 1, padding: '10px', background: rejectNotes.trim() ? '#EF4444' : '#E2E8F0', color: rejectNotes.trim() ? '#fff' : '#94A3B8', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: rejectNotes.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit', fontWeight: '700' }}>Confirm rejection</button>
               </div>
             </div>
           )}
@@ -504,7 +539,7 @@ function TeacherDetail({ teacher, allReviews, allBookings, onVerify, onSuspend, 
   const teacherReviews = allReviews.filter(r => r.teacher_id === teacher.id)
   const teacherBookings = allBookings.filter(b => b.teacher_id === teacher.id)
   const avgRating = teacherReviews.length > 0 ? (teacherReviews.reduce((s, r) => s + r.rating, 0) / teacherReviews.length).toFixed(1) : null
-  const totalEarned = teacherBookings.filter(b => b.payment_status === 'paid').reduce((s, b) => s + (b.teacher_payout || 0), 0)
+  const totalEarned = teacherBookings.filter(b => b.payment_status === 'paid' && b.status !== 'cancelled').reduce((s, b) => s + (b.teacher_payout || 0), 0)
   const isSuspended = teacher.profiles?.status === 'suspended'
 
   useEffect(() => {
@@ -588,7 +623,7 @@ function TeacherDetail({ teacher, allReviews, allBookings, onVerify, onSuspend, 
                   <span>🪪</span>
                   <div style={{ flex: 1 }}><div style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>{d.document_type}</div></div>
                   <StatusBadge status={d.status} />
-                  <ViewFileBtn url={d.file_url} name={d.document_type} />
+                  <DocViewBtn fileUrl={d.file_url} name={d.document_type} label="View" />
                 </div>
               ))}
           </DrawerSection>
@@ -704,7 +739,7 @@ function UserDetail({ user, allBookings, onSuspend, onDelete, onUpdateProfile })
       <div style={{ borderTop: '2px solid #E2E8F0', paddingTop: '1.25rem', display: 'flex', gap: '8px' }}>
         {isSuspended
           ? <button onClick={() => onSuspend(user.id, false)} style={btnGreen}>Unblock</button>
-          : <button onClick={() => setPendingAction({ title: 'Suspend User', description: 'This will prevent the user from accessing TeachMe.', confirmLabel: '⏸ Suspend', style: btnYellow, onConfirm: (reason) => onSuspend(user.id, true, reason) })} style={btnYellow}>⏸ Suspend</button>
+          : <button onClick={() => setPendingAction({ title: 'Suspend User', description: 'This will prevent the user from accessing Stuumo.', confirmLabel: '⏸ Suspend', style: btnYellow, onConfirm: (reason) => onSuspend(user.id, true, reason) })} style={btnYellow}>⏸ Suspend</button>
         }
         <button onClick={() => setPendingAction({ title: 'Delete User', description: 'This is permanent and cannot be undone.', confirmLabel: '🗑 Delete permanently', style: btnRed, onConfirm: (reason) => onDelete(user.id, reason) })} style={btnRed}>🗑 Delete</button>
       </div>
@@ -843,6 +878,7 @@ export default function Dashboard() {
     setSessionEnrollCounts(enrollCounts)
 
     const totalRevenue = (paymentData || []).reduce((sum, p) => sum + (p.amount || 0), 0)
+    const refundedTotal = (bookingData || []).filter(b => b.refund_status === 'pending' || b.refund_status === 'refunded').reduce((s, b) => s + (b.amount || 0), 0)
     const teacherIdsWithCerts = new Set((certData || []).map(c => c.teacher_id))
     const incomplete = (teacherData || []).filter(t => !teacherIdsWithCerts.has(t.id))
     const reviewsByTeacher = {}
@@ -868,7 +904,7 @@ export default function Dashboard() {
       verified: teacherData?.filter(t => t.is_verified).length || 0,
       totalUsers: userData?.length || 0, learners: userData?.filter(u => u.role === 'learner').length || 0,
       parents: userData?.filter(u => u.role === 'parent').length || 0,
-      totalBookings: bookingData?.length || 0, totalSessions: sessionData?.length || 0, totalRevenue,
+      totalBookings: bookingData?.length || 0, totalSessions: sessionData?.length || 0, totalRevenue, refundedTotal,
     })
     setLoading(false)
   }
@@ -882,6 +918,19 @@ export default function Dashboard() {
   const updateCert = async (id, status) => { await supabase.from('certificates').update({ status }).eq('id', id); await log(`Certificate ${status}`, 'certificate', id); showMsg(`✅ Certificate ${status}.`); fetchAll() }
   const updateDoc = async (id, status) => { await supabase.from('teacher_documents').update({ status }).eq('id', id); await log(`Document ${status}`, 'document', id); showMsg(`✅ Document ${status}.`); fetchAll() }
   const updateTeacher = async (id, is_verified) => { await supabase.from('teachers').update({ is_verified }).eq('id', id); await log(is_verified ? 'Teacher verified' : 'Teacher unverified', 'teacher', id); showMsg(`✅ Teacher ${is_verified ? 'verified' : 'unverified'}.`); fetchAll() }
+
+  const approvePhoto = async (userId, pendingUrl, name = '') => {
+    await supabase.from('profiles').update({ avatar_url: pendingUrl, pending_avatar_url: null }).eq('id', userId)
+    await supabase.from('notifications').insert({ user_id: userId, title: '✅ Photo approved', message: 'Your new profile photo has been approved and is now live.', type: 'profile', link: '/dashboard' })
+    await log('Profile photo approved', 'user', userId, name)
+    showMsg('✅ Photo approved.'); fetchAll()
+  }
+  const rejectPhoto = async (userId, name = '', reason = '') => {
+    await supabase.from('profiles').update({ pending_avatar_url: null }).eq('id', userId)
+    await supabase.from('notifications').insert({ user_id: userId, title: 'Profile photo not approved', message: `Your new profile photo was not approved. Reason: ${reason}`, type: 'profile', link: '/dashboard' })
+    await log('Profile photo rejected', 'user', userId, `${name}: ${reason}`)
+    showMsg('✅ Photo rejected.'); fetchAll()
+  }
 
   const suspendUser = async (id, suspend, reason = '') => {
     await supabase.from('profiles').update({ status: suspend ? 'suspended' : 'active' }).eq('id', id)
@@ -930,28 +979,39 @@ export default function Dashboard() {
   const updateReferral = async (id, reward_status) => { await supabase.from('referral_rewards').update({ reward_status }).eq('id', id); showMsg(`✅ Referral marked ${reward_status}.`); fetchAll() }
   const updateFlag = async (id, status) => { await supabase.from('flags').update({ status }).eq('id', id); await log(`Flag ${status}`, 'flag', id); showMsg(`✅ Flag ${status}.`); fetchAll() }
   const markPayoutPaid = async (bookingId) => { await supabase.from('bookings').update({ payout_status: 'paid' }).eq('id', bookingId); await log('Payout marked paid', 'booking', bookingId); showMsg('✅ Payout processed.'); fetchAll() }
-  const approveApplication = async (teacherId, teacherName, userId) => {
+
+  const markRefunded = async (booking) => {
+    await supabase.from('bookings').update({ refund_status: 'refunded' }).eq('id', booking.id)
+    await supabase.from('notifications').insert({ user_id: booking.client_id, title: '💳 Refund processed', message: `Your refund of GH₵ ${booking.amount} for the cancelled ${booking.subject || 'private'} session has been processed.`, type: 'booking_confirmed', link: '/booking' })
+    await log('Refund processed', 'booking', booking.id, `GH₵ ${booking.amount}`)
+    showMsg('✅ Refund marked as processed.'); fetchAll()
+  }
+  const approveApplication = async (teacherId, teacherName, userId, teacherEmail) => {
     await supabase.from('teachers').update({ application_status: 'approved', is_verified: true }).eq('id', teacherId)
     await supabase.from('notifications').insert({ user_id: userId, title: '🎉 Application approved!', message: 'Your teacher application has been approved. Your profile is now live.', type: 'application', link: '/dashboard' })
+    if (teacherEmail) await sendEmail({ type: 'application_approved', teacherEmail, teacherName })
     await log('Application approved', 'teacher', teacherId, teacherName)
     showMsg(`✅ ${teacherName}'s application approved.`); fetchAll()
   }
-  const rejectApplication = async (teacherId, teacherName, userId, notes) => {
+  const rejectApplication = async (teacherId, teacherName, userId, notes, teacherEmail) => {
     await supabase.from('teachers').update({ application_status: 'rejected', application_notes: notes }).eq('id', teacherId)
     await supabase.from('notifications').insert({ user_id: userId, title: 'Application update', message: `Your application was not approved. Reason: ${notes}`, type: 'application', link: '/dashboard' })
+    if (teacherEmail) await sendEmail({ type: 'application_rejected', teacherEmail, teacherName, notes })
     await log('Application rejected', 'teacher', teacherId, `${teacherName}: ${notes}`)
     showMsg(`✅ ${teacherName}'s application rejected.`); fetchAll()
   }
 
   const pendingFlags = flags.filter(f => f.status === 'pending').length
   const pendingApplications = teachers.filter(t => t.application_status === 'pending').length
-  const pendingPayouts = bookings.filter(b => b.payment_status === 'paid' && b.payout_status === 'pending').length
+  const pendingPhotos = allUsers.filter(u => u.pending_avatar_url).length
+  const pendingPayouts = bookings.filter(b => b.payment_status === 'paid' && b.payout_status === 'pending' && b.status !== 'cancelled').length
+  const pendingRefunds = bookings.filter(b => b.refund_status === 'pending').length
 
   return (
     <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'DM Sans, sans-serif', color: '#111', display: 'flex', flexDirection: 'column' }}>
       <nav style={{ background: '#1E293B', borderBottom: '1px solid #334155', padding: '0.875rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ fontFamily: 'Georgia, serif', fontSize: '20px', fontWeight: '700', color: '#fff' }}>Teach<span style={{ color: '#FFD700' }}>Me</span></div>
+          <div style={{ fontFamily: "'Roboto Serif', Georgia, serif", fontSize: '22px', fontWeight: '700', color: '#fff' }}>Stuumo</div>
           <span style={{ fontSize: '11px', background: '#2563EB', color: '#fff', padding: '2px 10px', borderRadius: '20px', fontWeight: '700' }}>ADMIN</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -960,7 +1020,7 @@ export default function Dashboard() {
         </div>
       </nav>
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <Sidebar tab={tab} setTab={setTab} pendingApplications={pendingApplications} pendingCerts={stats.pendingCerts} pendingDocs={stats.pendingDocs} pendingFlags={pendingFlags} pendingPayouts={pendingPayouts} incompletCount={incompletTeachers.length} />
+        <Sidebar tab={tab} setTab={setTab} pendingApplications={pendingApplications} pendingCerts={stats.pendingCerts} pendingDocs={stats.pendingDocs} pendingPhotos={pendingPhotos} pendingFlags={pendingFlags} pendingPayouts={pendingPayouts} pendingRefunds={pendingRefunds} incompletCount={incompletTeachers.length} />
         <main style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 2rem' }}>
           {message && (
             <div style={{ background: message.startsWith('✅') ? '#DCFCE7' : '#FEE2E2', color: message.startsWith('✅') ? '#166534' : '#991B1B', padding: '12px 16px', borderRadius: '10px', fontSize: '14px', marginBottom: '1.25rem', border: `1px solid ${message.startsWith('✅') ? '#BBF7D0' : '#FECACA'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -972,10 +1032,11 @@ export default function Dashboard() {
             <div style={{ textAlign: 'center', color: '#64748B', padding: '4rem', fontSize: '16px' }}>⏳ Loading...</div>
           ) : (
             <>
-              {tab === 'overview' && <OverviewTab stats={stats} bookings={bookings} teachers={teachers} pendingApplications={pendingApplications} pendingPayouts={pendingPayouts} pendingCerts={stats.pendingCerts} pendingDocs={stats.pendingDocs} pendingFlags={pendingFlags} setTab={setTab} />}
+              {tab === 'overview' && <OverviewTab stats={stats} bookings={bookings} teachers={teachers} pendingApplications={pendingApplications} pendingPayouts={pendingPayouts} pendingRefunds={pendingRefunds} pendingCerts={stats.pendingCerts} pendingDocs={stats.pendingDocs} pendingPhotos={pendingPhotos} pendingFlags={pendingFlags} setTab={setTab} />}
               {tab === 'applications' && <ApplicationsTab teachers={teachers} allUsers={allUsers} onApprove={approveApplication} onReject={rejectApplication} />}
               {tab === 'certificates' && <CertificatesTab certificates={certificates} onUpdate={updateCert} onRefresh={fetchAll} setMessage={showMsg} log={log} teachers={teachers} />}
               {tab === 'documents' && <DocumentsTab documents={documents} onUpdate={updateDoc} onRefresh={fetchAll} setMessage={showMsg} log={log} teachers={teachers} />}
+              {tab === 'photos' && <PhotoReviewsTab users={allUsers} onApprove={approvePhoto} onReject={rejectPhoto} />}
               {tab === 'teachers' && <TeachersTab teachers={teachers} allReviews={reviews} allBookings={bookings} onVerify={updateTeacher} onSuspend={suspendUser} onDelete={deleteUser} onUpdateProfile={updateUserProfile} />}
               {tab === 'learners' && <LearnersTab users={allUsers.filter(u => u.role === 'learner')} allBookings={bookings} onSuspend={suspendUser} onDelete={deleteUser} onUpdateProfile={updateUserProfile} />}
               {tab === 'parents' && <ParentsTab users={allUsers.filter(u => u.role === 'parent')} allBookings={bookings} onSuspend={suspendUser} onDelete={deleteUser} onUpdateProfile={updateUserProfile} />}
@@ -985,6 +1046,7 @@ export default function Dashboard() {
               {tab === 'sessions' && <SessionsTab sessions={sessions} enrollCounts={sessionEnrollCounts} onToggle={softDeleteSession} onUpdate={updateSession} onCreate={createAdminSession} teachers={teachers} />}
               {tab === 'payments' && <PaymentsTab payments={payments} />}
               {tab === 'payouts' && <PayoutsTab bookings={bookings} onMarkPayout={markPayoutPaid} />}
+              {tab === 'refunds' && <RefundsTab bookings={bookings} onMarkRefunded={markRefunded} />}
               {tab === 'referrals' && <ReferralsTab referrals={referrals} onUpdate={updateReferral} />}
               {tab === 'onboarding' && <OnboardingTab teachers={incompletTeachers} allReviews={reviews} allBookings={bookings} />}
               {tab === 'quality' && <QualityTab teachers={teachers} />}
@@ -1001,21 +1063,21 @@ export default function Dashboard() {
   )
 }
 
-function OverviewTab({ stats, bookings, teachers, pendingApplications, pendingPayouts, pendingCerts, pendingDocs, pendingFlags, setTab }) {
-  const needsAttention = pendingApplications + pendingPayouts + pendingCerts + pendingDocs + pendingFlags
+function OverviewTab({ stats, bookings, teachers, pendingApplications, pendingPayouts, pendingRefunds, pendingCerts, pendingDocs, pendingPhotos, pendingFlags, setTab }) {
+  const needsAttention = pendingApplications + pendingPayouts + pendingRefunds + pendingCerts + pendingDocs + pendingPhotos + pendingFlags
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
         {[['👥','Total users',stats.totalUsers,'#2563EB'],['👩‍🏫','Teachers',stats.teachers,'#7C3AED'],['📚','Learners',stats.learners,'#059669'],['👨‍👩‍👧','Parents',stats.parents,'#D97706']].map(([icon,label,value,color]) => <StatCard key={label} icon={icon} label={label} value={value} color={color} />)}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-        {[['📅','Total bookings',stats.totalBookings,'#0891B2'],['🎥','Live sessions',stats.totalSessions,'#7C3AED'],['✅','Verified teachers',stats.verified,'#059669'],['💰','Total GMV',`GH₵ ${(stats.totalRevenue||0).toFixed(2)}`,'#166534']].map(([icon,label,value,color]) => <StatCard key={label} icon={icon} label={label} value={value} color={color} />)}
+        {[['📅','Total bookings',stats.totalBookings,'#0891B2'],['🎥','Live sessions',stats.totalSessions,'#7C3AED'],['✅','Verified teachers',stats.verified,'#059669'],['💰','Net GMV',`GH₵ ${((stats.totalRevenue||0) - (stats.refundedTotal||0)).toFixed(2)}`,'#166534']].map(([icon,label,value,color]) => <StatCard key={label} icon={icon} label={label} value={value} color={color} />)}
       </div>
       {needsAttention > 0 && (
         <div style={{ background: '#FFFBEB', borderRadius: '12px', padding: '1.25rem 1.5rem', border: '1px solid #FDE68A' }}>
           <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#92400E', marginBottom: '10px' }}>⚠️ Needs attention</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {[[pendingApplications,'🚀','teacher application','applications'],[pendingPayouts,'💰','teacher payout','payouts'],[pendingCerts,'📋','certificate','certificates'],[pendingDocs,'🪪','document','documents'],[pendingFlags,'🚩','flag','flags']].filter(([count]) => count > 0).map(([count,icon,label,tabKey]) => (
+            {[[pendingApplications,'🚀','teacher application','applications'],[pendingPayouts,'💰','teacher payout','payouts'],[pendingRefunds,'↩️','learner refund','refunds'],[pendingCerts,'📋','certificate','certificates'],[pendingDocs,'🪪','document','documents'],[pendingPhotos,'🖼️','photo review','photos'],[pendingFlags,'🚩','flag','flags']].filter(([count]) => count > 0).map(([count,icon,label,tabKey]) => (
               <div key={tabKey} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#fff', borderRadius: '8px', border: '1px solid #FDE68A' }}>
                 <span style={{ fontSize: '14px', color: '#78350F' }}>{icon} {count} {label}{count !== 1 ? 's' : ''} awaiting review</span>
                 <button onClick={() => setTab(tabKey)} style={{ fontSize: '13px', color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '700' }}>Review →</button>
@@ -1229,6 +1291,77 @@ function CertificatesTab({ certificates, onUpdate, onRefresh, setMessage, log, t
   )
 }
 
+function PhotoReviewsTab({ users, onApprove, onReject }) {
+  const [rejecting, setRejecting] = useState(null) // the user pending rejection
+  const pending = (users || []).filter(u => u.pending_avatar_url)
+
+  const PhotoBox = ({ label, url, initial, highlight }) => (
+    <div style={{ flex: 1, textAlign: 'center' }}>
+      <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>{label}</div>
+      {url ? (
+        <img src={url} alt={label} style={{ width: '110px', height: '110px', borderRadius: '50%', objectFit: 'cover', border: `3px solid ${highlight ? '#2563EB' : '#E2E8F0'}`, display: 'block', margin: '0 auto' }} />
+      ) : (
+        <div style={{ width: '110px', height: '110px', borderRadius: '50%', background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '38px', fontWeight: '700', color: '#94A3B8', border: '3px solid #E2E8F0', margin: '0 auto' }}>
+          {initial || '—'}
+        </div>
+      )}
+    </div>
+  )
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div>
+        <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#111', margin: 0 }}>Photo Reviews</h3>
+        <p style={{ fontSize: '13px', color: '#64748B', margin: '4px 0 0' }}>New teacher profile photos awaiting approval. Approving makes the photo live; rejecting discards it and keeps the current one.</p>
+      </div>
+
+      {pending.length === 0 ? (
+        <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '3rem', textAlign: 'center', color: '#64748B', fontSize: '15px' }}>
+          🖼️ No photos waiting for review.
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}>
+          {pending.map(u => (
+            <div key={u.id} style={{ background: '#fff', borderRadius: '12px', border: '1px solid #E2E8F0', overflow: 'hidden' }}>
+              <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: '15px', fontWeight: '700', color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.full_name || 'Unnamed'}</div>
+                  <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+                    <span style={{ textTransform: 'capitalize' }}>{u.role}</span>{[u.city, u.country].filter(Boolean).length > 0 ? ` · ${[u.city, u.country].filter(Boolean).join(', ')}` : ''}
+                  </div>
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: '700', color: '#854D0E', background: '#FEF9C3', border: '1px solid #FDE68A', padding: '3px 10px', borderRadius: '9999px', whiteSpace: 'nowrap', flexShrink: 0 }}>⏳ Pending</span>
+              </div>
+
+              <div style={{ padding: '1.25rem', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <PhotoBox label="Current" url={u.avatar_url} initial={u.full_name?.charAt(0)} />
+                <div style={{ alignSelf: 'center', fontSize: '20px', color: '#CBD5E1' }}>→</div>
+                <PhotoBox label="New" url={u.pending_avatar_url} highlight />
+              </div>
+
+              <div style={{ padding: '0 1.25rem 1.25rem', display: 'flex', gap: '8px' }}>
+                <button onClick={() => onApprove(u.id, u.pending_avatar_url, u.full_name)} style={{ ...btnGreen, flex: 1, textAlign: 'center' }}>✓ Approve</button>
+                <button onClick={() => setRejecting(u)} style={{ ...btnRed, flex: 1, textAlign: 'center' }}>✕ Reject</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {rejecting && (
+        <ReasonModal
+          title="Reject photo"
+          description={`Discard the pending photo for ${rejecting.full_name || 'this user'}? Their current photo stays in place and they'll be notified.`}
+          confirmLabel="✕ Reject photo"
+          confirmStyle={btnRed}
+          onConfirm={(reason) => { onReject(rejecting.id, rejecting.full_name, reason); setRejecting(null) }}
+          onCancel={() => setRejecting(null)}
+        />
+      )}
+    </div>
+  )
+}
+
 function DocumentsTab({ documents, onUpdate, onRefresh, setMessage, log, teachers }) {
   const [expandedId, setExpandedId] = useState(null)
   const [f, setF] = useState({ status: 'all', type: 'all', dateFrom: '', dateTo: '', search: '' })
@@ -1254,10 +1387,9 @@ function DocumentsTab({ documents, onUpdate, onRefresh, setMessage, log, teacher
     setUploading(true)
     try {
       const fileName = `${uploadTeacherId}/${Date.now()}.${uploadFile.name.split('.').pop()}`
-      const { error } = await supabase.storage.from('documents').upload(fileName, uploadFile)
+      const { error } = await supabase.storage.from('teacher-ids').upload(fileName, uploadFile)
       if (error) throw error
-      const { data: urlData } = supabase.storage.from('documents').getPublicUrl(fileName)
-      await supabase.from('teacher_documents').insert({ teacher_id: uploadTeacherId, document_type: uploadDocType, file_url: urlData.publicUrl, status: 'approved' })
+      await supabase.from('teacher_documents').insert({ teacher_id: uploadTeacherId, document_type: uploadDocType, file_url: fileName, status: 'approved' })
       await log('Admin uploaded document', 'document', uploadTeacherId, uploadDocType)
       setMessage('✅ Document uploaded and approved.')
       setUploadFile(null); setUploadTeacherId(''); setShowUpload(false); onRefresh()
@@ -1326,7 +1458,7 @@ function DocumentsTab({ documents, onUpdate, onRefresh, setMessage, log, teacher
             </div>
             {isExpanded && (
               <div style={{ borderTop: '1px solid #E2E8F0', padding: '1.25rem 1.5rem', background: '#F8FAFC' }}>
-                <div style={{ marginBottom: '1rem' }}><ViewFileBtn url={doc.file_url} name={doc.document_type} label="📄 View document" /></div>
+                <div style={{ marginBottom: '1rem' }}><DocViewBtn fileUrl={doc.file_url} name={doc.document_type} label="📄 View document" /></div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {doc.status !== 'approved' && <button onClick={() => { onUpdate(doc.id, 'approved'); setExpandedId(null) }} style={btnGreen}>✓ Approve</button>}
                   {doc.status !== 'declined' && <button onClick={() => { onUpdate(doc.id, 'declined'); setExpandedId(null) }} style={btnRed}>✗ Decline</button>}
@@ -1448,7 +1580,7 @@ function UserRoleTab({ users, allBookings, onSuspend, onDelete, onUpdateProfile,
           <button onClick={() => setSelected(u)} style={{ padding: '7px 16px', background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '700' }}>View →</button>
           {u.status === 'suspended'
             ? <button onClick={() => onSuspend(u.id, false)} style={btnGreen}>Unblock</button>
-            : <button onClick={() => setPendingAction({ title: `Suspend ${roleLabel}`, description: `This will prevent ${u.full_name} from accessing TeachMe.`, confirmLabel: '⏸ Suspend', style: btnYellow, onConfirm: (reason) => onSuspend(u.id, true, reason) })} style={btnYellow}>⏸ Suspend</button>
+            : <button onClick={() => setPendingAction({ title: `Suspend ${roleLabel}`, description: `This will prevent ${u.full_name} from accessing Stuumo.`, confirmLabel: '⏸ Suspend', style: btnYellow, onConfirm: (reason) => onSuspend(u.id, true, reason) })} style={btnYellow}>⏸ Suspend</button>
           }
           <button onClick={() => setPendingAction({ title: `Delete ${roleLabel}`, description: 'Permanent — cannot be undone.', confirmLabel: '🗑 Delete', style: btnRed, onConfirm: (reason) => onDelete(u.id, reason) })} style={btnGhost}>Delete</button>
         </div>
@@ -1539,7 +1671,7 @@ function UsersTab({ users, allBookings, onSuspend, onDelete, onRefresh, setMessa
           <button onClick={() => setViewUser(u)} style={{ padding: '7px 16px', background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '700' }}>View →</button>
           {u.status === 'suspended'
             ? <button onClick={() => onSuspend(u.id, false)} style={btnGreen}>Unblock</button>
-            : <button onClick={() => setPendingAction({ title: 'Suspend User', description: 'This will prevent the user from accessing TeachMe.', confirmLabel: '⏸ Suspend', style: btnYellow, onConfirm: (reason) => onSuspend(u.id, true, reason) })} style={btnYellow}>⏸ Suspend</button>
+            : <button onClick={() => setPendingAction({ title: 'Suspend User', description: 'This will prevent the user from accessing Stuumo.', confirmLabel: '⏸ Suspend', style: btnYellow, onConfirm: (reason) => onSuspend(u.id, true, reason) })} style={btnYellow}>⏸ Suspend</button>
           }
           <button onClick={() => setPendingAction({ title: 'Delete User', description: 'Permanent — cannot be undone.', confirmLabel: '🗑 Delete', style: btnRed, onConfirm: (reason) => onDelete(u.id, reason) })} style={btnGhost}>Delete</button>
         </div>
@@ -1606,7 +1738,7 @@ function BookingsTab({ bookings, onMarkPayout, onUpdateStatus }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <input style={searchInp} placeholder="Search by client, teacher or subject..." value={search} onChange={e => setSearch(e.target.value)} />
       <FilterBar filters={[
-        { key: 'status', label: 'Status', type: 'select', value: f.status, options: [{ value: 'all', label: 'All' },{ value: 'pending', label: 'Pending' },{ value: 'confirmed', label: 'Confirmed' },{ value: 'declined', label: 'Declined' }] },
+        { key: 'status', label: 'Status', type: 'select', value: f.status, options: [{ value: 'all', label: 'All' },{ value: 'pending', label: 'Pending' },{ value: 'confirmed', label: 'Confirmed' },{ value: 'declined', label: 'Declined' },{ value: 'cancelled', label: 'Cancelled' }] },
         { key: 'paymentStatus', label: 'Payment', type: 'select', value: f.paymentStatus, options: [{ value: 'all', label: 'All' },{ value: 'paid', label: 'Paid' },{ value: 'unpaid', label: 'Unpaid' }] },
         { key: 'payoutStatus', label: 'Payout', type: 'select', value: f.payoutStatus, options: [{ value: 'all', label: 'All' },{ value: 'pending', label: 'Pending' },{ value: 'paid', label: 'Paid out' }] },
         { key: 'subject', label: 'Subject', type: 'select', value: f.subject, options: [{ value: '', label: 'All subjects' }, ...subjects.map(s => ({ value: s, label: s }))] },
@@ -1615,14 +1747,15 @@ function BookingsTab({ bookings, onMarkPayout, onUpdateStatus }) {
       ]} onChange={(key, val) => setF(prev => ({ ...prev, [key]: val }))} onClear={() => setF({ status: 'all', paymentStatus: 'all', payoutStatus: 'all', dateFrom: '', dateTo: '', subject: '' })} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: '13px', color: '#64748B' }}>{filtered.length} booking{filtered.length !== 1 ? 's' : ''}</span>
-        <button onClick={() => exportCSV(filtered.map(b => ({ client: b.profiles?.full_name, teacher: b.teachers?.profiles?.full_name, subject: b.subject, status: b.status, amount: b.amount, commission: b.commission_amount, payout: b.teacher_payout, payment: b.payment_status, payout_status: b.payout_status, date: b.created_at })), 'bookings.csv')} style={btnExport}>⬇ CSV</button>
+        <button onClick={() => exportCSV(filtered.map(b => ({ client: b.profiles?.full_name, teacher: b.teachers?.profiles?.full_name, subject: b.subject, status: b.status, scheduled: b.session_date ? `${b.session_date}${b.start_time ? ' ' + b.start_time.slice(0, 5) : ''}` : '', amount: b.amount, commission: b.commission_amount, payout: b.teacher_payout, payment: b.payment_status, payout_status: b.payout_status, date: b.created_at })), 'bookings.csv')} style={btnExport}>⬇ CSV</button>
       </div>
       {filtered.map(b => (
         <div key={b.id} style={{ background: '#fff', borderRadius: '12px', padding: '1rem 1.5rem', border: `1px solid ${b.status === 'pending' ? '#93C5FD' : '#E2E8F0'}`, display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <div style={{ flex: 1, minWidth: '200px' }}>
             <div style={{ fontSize: '15px', fontWeight: '600', color: '#111', marginBottom: '4px' }}>{b.profiles?.full_name} → {b.teachers?.profiles?.full_name}</div>
             <div style={{ fontSize: '13px', color: '#64748B', marginBottom: '2px' }}>📚 {b.subject}</div>
-            <div style={{ fontSize: '12px', color: '#94A3B8' }}>{new Date(b.created_at).toLocaleDateString()}</div>
+            {b.session_date && <div style={{ fontSize: '12px', color: '#2563EB', fontWeight: '700', marginBottom: '2px' }}>🗓️ {new Date(b.session_date + 'T00:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}{b.start_time ? ` · ${b.start_time.slice(0, 5)}` : ''}</div>}
+            <div style={{ fontSize: '12px', color: '#94A3B8' }}>{b.session_date ? 'Requested ' : ''}{new Date(b.created_at).toLocaleDateString()}</div>
           </div>
           {b.amount > 0 && <div style={{ textAlign: 'right' }}><div style={{ fontSize: '15px', fontWeight: '700', color: '#2563EB' }}>GH₵ {b.amount}</div>{b.teacher_payout > 0 && <div style={{ fontSize: '11px', color: '#64748B' }}>Payout: GH₵ {(b.teacher_payout||0).toFixed(2)}</div>}</div>}
           <StatusBadge status={b.status} />
@@ -1630,7 +1763,9 @@ function BookingsTab({ bookings, onMarkPayout, onUpdateStatus }) {
             <button onClick={() => onUpdateStatus(b.id, 'confirmed')} style={btnGreen}>✓ Accept</button>
             <button onClick={() => onUpdateStatus(b.id, 'declined')} style={btnRed}>✗ Decline</button>
           </>}
-          {b.payment_status === 'paid' && b.payout_status === 'pending' && <button onClick={() => onMarkPayout(b.id)} style={btnGreen}>Mark paid out</button>}
+          {b.status !== 'cancelled' && b.payment_status === 'paid' && b.payout_status === 'pending' && <button onClick={() => onMarkPayout(b.id)} style={btnGreen}>Mark paid out</button>}
+          {b.refund_status === 'pending' && <span style={{ fontSize: '12px', fontWeight: '700', color: '#991B1B', background: '#FEE2E2', border: '1px solid #FECACA', padding: '4px 10px', borderRadius: '20px' }}>⚠ Refund owed</span>}
+          {b.refund_status === 'refunded' && <span style={{ fontSize: '12px', fontWeight: '700', color: '#166534', background: '#DCFCE7', border: '1px solid #BBF7D0', padding: '4px 10px', borderRadius: '20px' }}>✓ Refunded</span>}
         </div>
       ))}
       {filtered.length === 0 && <Empty text="No bookings found." />}
@@ -1800,9 +1935,66 @@ function PaymentsTab({ payments }) {
   )
 }
 
+function RefundsTab({ bookings, onMarkRefunded }) {
+  const [f, setF] = useState('pending')
+  const [confirmTarget, setConfirmTarget] = useState(null)
+  const refundable = bookings.filter(b => b.refund_status === 'pending' || b.refund_status === 'refunded')
+  const filtered = f === 'all' ? refundable : refundable.filter(b => b.refund_status === f)
+  const pendingTotal = refundable.filter(b => b.refund_status === 'pending').reduce((s, b) => s + (b.amount || 0), 0)
+  const refundedTotal = refundable.filter(b => b.refund_status === 'refunded').reduce((s, b) => s + (b.amount || 0), 0)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div>
+        <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#111', margin: 0 }}>Refunds</h3>
+        <p style={{ fontSize: '13px', color: '#64748B', margin: '4px 0 0' }}>Learners who paid for a session that was later cancelled. Process the refund in Paystack, then mark it here.</p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+        <StatCard icon="⚠️" label="Refunds owed" value={`GH₵ ${pendingTotal.toFixed(2)}`} color="#991B1B" />
+        <StatCard icon="✅" label="Refunds processed" value={`GH₵ ${refundedTotal.toFixed(2)}`} color="#166534" />
+      </div>
+
+      <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '8px', border: '1px solid #E2E8F0', width: 'fit-content' }}>
+        {[['pending', 'Owed'], ['refunded', 'Processed'], ['all', 'All']].map(([key, label]) => (
+          <button key={key} onClick={() => setF(key)} style={{ padding: '7px 18px', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', background: f === key ? '#2563EB' : 'transparent', color: f === key ? '#fff' : '#64748B', fontWeight: f === key ? '700' : '400' }}>{label}</button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <Empty text={f === 'pending' ? '🎉 No refunds owed.' : 'No refunds found.'} />
+      ) : filtered.map(b => (
+        <div key={b.id} style={{ background: '#fff', borderRadius: '12px', padding: '1rem 1.5rem', border: `1px solid ${b.refund_status === 'pending' ? '#FECACA' : '#E2E8F0'}`, display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+          <div style={{ flex: 1, minWidth: '200px' }}>
+            <div style={{ fontSize: '15px', fontWeight: '600', color: '#111', marginBottom: '4px' }}>{b.profiles?.full_name || 'Learner'} <span style={{ color: '#94A3B8', fontWeight: '400' }}>— {b.subject}</span></div>
+            <div style={{ fontSize: '12px', color: '#94A3B8' }}>Teacher: {b.teachers?.profiles?.full_name || '—'}{b.session_date ? ` · was ${new Date(b.session_date + 'T00:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}` : ''}</div>
+          </div>
+          <div style={{ textAlign: 'right' }}><div style={{ fontSize: '15px', fontWeight: '700', color: '#991B1B' }}>GH₵ {(b.amount || 0).toFixed(2)}</div></div>
+          {b.refund_status === 'pending'
+            ? <button onClick={() => setConfirmTarget(b)} style={btnGreen}>Mark refunded</button>
+            : <StatusBadge status="refunded" />}
+        </div>
+      ))}
+
+      {confirmTarget && (
+        <div onClick={() => setConfirmTarget(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000, padding: '1rem' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: '16px', padding: '1.75rem', maxWidth: '400px', width: '100%' }}>
+            <h3 style={{ fontSize: '17px', fontWeight: '700', color: '#111', margin: '0 0 10px' }}>Mark this refund as processed?</h3>
+            <p style={{ fontSize: '14px', color: '#64748B', lineHeight: '1.6', margin: '0 0 1.5rem' }}>Confirm you've refunded <strong style={{ color: '#111' }}>GH₵ {(confirmTarget.amount || 0).toFixed(2)}</strong> to {confirmTarget.profiles?.full_name || 'the learner'} in Paystack. They'll be notified.</p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={() => setConfirmTarget(null)} style={{ ...btnGhost, flex: 1 }}>Cancel</button>
+              <button onClick={() => { onMarkRefunded(confirmTarget); setConfirmTarget(null) }} style={{ ...btnGreen, flex: 1 }}>Yes, mark refunded</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function PayoutsTab({ bookings, onMarkPayout }) {
   const [f, setF] = useState({ status: 'pending', search: '', dateFrom: '', dateTo: '', amountMin: '', amountMax: '' })
-  const paidBookings = bookings.filter(b => b.payment_status === 'paid' && b.amount > 0)
+  const paidBookings = bookings.filter(b => b.payment_status === 'paid' && b.amount > 0 && b.status !== 'cancelled')
   const filtered = paidBookings.filter(b => {
     if (f.status !== 'all' && b.payout_status !== f.status) return false
     if (f.search && !b.teachers?.profiles?.full_name?.toLowerCase().includes(f.search.toLowerCase()) && !b.subject?.toLowerCase().includes(f.search.toLowerCase())) return false
@@ -2094,6 +2286,8 @@ function RevenueTab({ payments, bookings, allUsers, teachers }) {
   const totalGMV = filteredPayments.reduce((s, p) => s + (p.amount || 0), 0)
   const totalCommission = filteredPayments.reduce((s, p) => s + (p.commission_amount || 0), 0)
   const totalPayout = filteredPayments.reduce((s, p) => s + (p.teacher_payout || 0), 0)
+  const totalRefunds = filteredBookings.filter(b => b.refund_status === 'pending' || b.refund_status === 'refunded').reduce((s, b) => s + (b.amount || 0), 0)
+  const netGMV = totalGMV - totalRefunds
   const confirmedBookings = filteredBookings.filter(b => b.status === 'confirmed')
   const avgValue = confirmedBookings.length > 0 ? (confirmedBookings.reduce((s, b) => s + (b.amount || 0), 0) / confirmedBookings.length).toFixed(2) : '0.00'
   const monthlyData = {}
@@ -2119,8 +2313,10 @@ function RevenueTab({ payments, bookings, allUsers, teachers }) {
         { key: 'dateFrom', label: 'From', type: 'date', value: f.dateFrom },
         { key: 'dateTo', label: 'To', type: 'date', value: f.dateTo },
       ]} onChange={(key, val) => setF(prev => ({ ...prev, [key]: val }))} onClear={() => setF({ period: 'all', subject: '', dateFrom: '', dateTo: '' })} />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-        <StatCard icon="💰" label="Total GMV" value={`GH₵ ${totalGMV.toFixed(2)}`} color="#166534" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+        <StatCard icon="💰" label="Gross GMV (overall)" value={`GH₵ ${totalGMV.toFixed(2)}`} color="#64748B" />
+        <StatCard icon="↩️" label="Refunds" value={`GH₵ ${totalRefunds.toFixed(2)}`} color="#991B1B" />
+        <StatCard icon="✅" label="Net GMV" value={`GH₵ ${netGMV.toFixed(2)}`} color="#166534" />
         <StatCard icon="📊" label="Commission" value={`GH₵ ${totalCommission.toFixed(2)}`} color="#2563EB" />
         <StatCard icon="👩‍🏫" label="Teacher payouts" value={`GH₵ ${totalPayout.toFixed(2)}`} color="#7C3AED" />
         <StatCard icon="📈" label="Avg booking value" value={`GH₵ ${avgValue}`} color="#D97706" />
