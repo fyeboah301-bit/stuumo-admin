@@ -954,7 +954,7 @@ export default function Dashboard() {
   const updateBookingStatus = async (bookingId, status) => {
     const booking = bookings.find(b => b.id === bookingId)
     const updateData = { status }
-    if (status === 'confirmed') updateData.room_id = 'teachme-' + bookingId.slice(0, 8) + '-' + Date.now()
+    if (status === 'confirmed') updateData.room_id = 'stuumo-' + bookingId.slice(0, 8) + '-' + Date.now()
     await supabase.from('bookings').update(updateData).eq('id', bookingId)
     await supabase.from('notifications').insert({ user_id: booking.client_id, title: status === 'confirmed' ? '🎉 Booking confirmed!' : 'Booking update', message: status === 'confirmed' ? `Your ${booking.subject} booking has been confirmed.` : `Your ${booking.subject} booking was declined.`, type: status === 'confirmed' ? 'booking_confirmed' : 'booking_declined', link: '/booking' })
     await log(`Booking ${status} by admin`, 'booking', bookingId, booking?.subject)
@@ -968,7 +968,7 @@ export default function Dashboard() {
   }
 
   const createAdminSession = async (data) => {
-    const roomId = 'teachme-session-' + data.teacher_id.slice(0, 8) + '-' + Date.now()
+    const roomId = 'stuumo-session-' + data.teacher_id.slice(0, 8) + '-' + Date.now()
     await supabase.from('live_sessions').insert({ ...data, room_id: roomId, max_spots: parseInt(data.max_spots), price: parseFloat(data.price) || 0 })
     await log('Session created by admin', 'session', 'new', data.title)
     showMsg('✅ Session created — visible on main app.'); fetchAll()
