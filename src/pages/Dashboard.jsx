@@ -988,7 +988,8 @@ export default function Dashboard() {
   }
   const approveApplication = async (teacherId, teacherName, userId, teacherEmail) => {
     await supabase.from('teachers').update({ application_status: 'approved', is_verified: true }).eq('id', teacherId)
-    await supabase.from('notifications').insert({ user_id: userId, title: '🎉 Application approved!', message: 'Your teacher application has been approved. Your profile is now live.', type: 'application', link: '/dashboard' })
+    if (teacherEmail) { try { await supabase.auth.resetPasswordForEmail(teacherEmail, { redirectTo: (import.meta.env.VITE_APP_URL || 'https://stuumo.com') + '/reset-password' }) } catch (e) { /* set-password email is non-blocking */ } }
+    await supabase.from('notifications').insert({ user_id: userId, title: '🎉 Application approved!', message: 'Your teacher application has been approved! Check your email for a link to set your password and sign in.', type: 'application', link: '/dashboard' })
     if (teacherEmail) await sendEmail({ type: 'application_approved', teacherEmail, teacherName })
     await log('Application approved', 'teacher', teacherId, teacherName)
     showMsg(`✅ ${teacherName}'s application approved.`); fetchAll()
