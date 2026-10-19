@@ -204,7 +204,7 @@ function ViewFileBtn({ url, name, label = 'View' }) {
   )
 }
 
-function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, pendingPhotos, pendingFlags, pendingPayouts, pendingRefunds, incompletCount }) {
+function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, pendingPhotos, pendingFlags, pendingPayouts, pendingRefunds, incompletCount, contactFlagCount }) {
   const groups = [
     { label: null, items: [{ key: 'overview', icon: '📊', label: 'Overview' }] },
     { label: 'People', items: [
@@ -232,6 +232,7 @@ function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, 
       { key: 'onboarding', icon: '🎯', label: 'Onboarding', badge: incompletCount || null },
       { key: 'quality', icon: '🏆', label: 'Quality Scores' },
       { key: 'flags', icon: '🚩', label: 'Flags', badge: pendingFlags || null, badgeRed: true },
+      { key: 'contact-flags', icon: '🔒', label: 'Contact Flags', badge: contactFlagCount || null, badgeRed: true },
       { key: 'revenue', icon: '📈', label: 'Revenue' },
       { key: 'geography', icon: '🌍', label: 'Geography' },
       { key: 'announcements', icon: '📢', label: 'Announcements' },
@@ -844,6 +845,7 @@ export default function Dashboard() {
   const [announcements, setAnnouncements] = useState([])
   const [auditLogs, setAuditLogs] = useState([])
   const [flags, setFlags] = useState([])
+  const [contactFlags, setContactFlags] = useState([])
   const [stats, setStats] = useState({ teachers: 0, pendingCerts: 0, pendingDocs: 0, verified: 0, totalUsers: 0, learners: 0, parents: 0, totalBookings: 0, totalSessions: 0, totalRevenue: 0 })
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
@@ -906,6 +908,8 @@ export default function Dashboard() {
       parents: userData?.filter(u => u.role === 'parent').length || 0,
       totalBookings: bookingData?.length || 0, totalSessions: sessionData?.length || 0, totalRevenue, refundedTotal,
     })
+    const { data: contactFlagData } = await supabase.from('flagged_messages').select('*').order('created_at', { ascending: false }).limit(1000)
+    setContactFlags(contactFlagData || [])
     setLoading(false)
   }
 
@@ -1021,7 +1025,7 @@ export default function Dashboard() {
         </div>
       </nav>
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <Sidebar tab={tab} setTab={setTab} pendingApplications={pendingApplications} pendingCerts={stats.pendingCerts} pendingDocs={stats.pendingDocs} pendingPhotos={pendingPhotos} pendingFlags={pendingFlags} pendingPayouts={pendingPayouts} pendingRefunds={pendingRefunds} incompletCount={incompletTeachers.length} />
+        <Sidebar tab={tab} setTab={setTab} pendingApplications={pendingApplications} pendingCerts={stats.pendingCerts} pendingDocs={stats.pendingDocs} pendingPhotos={pendingPhotos} pendingFlags={pendingFlags} pendingPayouts={pendingPayouts} pendingRefunds={pendingRefunds} incompletCount={incompletTeachers.length} contactFlagCount={contactFlags.length} />
         <main style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 2rem' }}>
           {message && (
             <div style={{ background: message.startsWith('✅') ? '#DCFCE7' : '#FEE2E2', color: message.startsWith('✅') ? '#166534' : '#991B1B', padding: '12px 16px', borderRadius: '10px', fontSize: '14px', marginBottom: '1.25rem', border: `1px solid ${message.startsWith('✅') ? '#BBF7D0' : '#FECACA'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1052,6 +1056,7 @@ export default function Dashboard() {
               {tab === 'onboarding' && <OnboardingTab teachers={incompletTeachers} allReviews={reviews} allBookings={bookings} />}
               {tab === 'quality' && <QualityTab teachers={teachers} />}
               {tab === 'flags' && <FlagsTab flags={flags} onUpdate={updateFlag} onRefresh={fetchAll} setMessage={showMsg} log={log} />}
+              {tab === 'contact-flags' && <ContactFlagsTab flags={contactFlags} allUsers={allUsers} />}
               {tab === 'revenue' && <RevenueTab payments={payments} bookings={bookings} allUsers={allUsers} teachers={teachers} />}
               {tab === 'geography' && <GeographyTab users={allUsers} teachers={teachers} />}
               {tab === 'announcements' && <AnnouncementsTab announcements={announcements} adminId={admin?.id} onRefresh={fetchAll} />}
@@ -2651,3 +2656,57 @@ const btnExport = { padding: '6px 14px', background: '#F5F3FF', color: '#6D28D9'
 const searchInp = { width: '100%', padding: '10px 14px', background: '#fff', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '14px', color: '#111', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }
 const formLbl   = { fontSize: '12px', color: '#64748B', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }
 const formInp   = { width: '100%', padding: '10px 14px', background: '#fff', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '14px', color: '#111', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }
+
+
+function CFStat({ label, value }) {
+  return (
+    <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '14px 18px', minWidth: '130px' }}>
+      <div style={{ fontSize: '22px', fontWeight: '800', color: '#6D28D9' }}>{value}</div>
+      <div style={{ fontSize: '12px', color: '#64748B' }}>{label}</div>
+    </div>
+  )
+}
+
+function ContactFlagsTab({ flags, allUsers }) {
+  const nameOf = (id) => {
+    const u = allUsers.find(x => x.id === id)
+    return u ? { name: u.full_name || '(no name)', role: u.role || '' } : { name: (id || 'Unknown').slice(0, 8), role: '' }
+  }
+  const byUser = {}
+  flags.forEach(f => { (byUser[f.user_id] = byUser[f.user_id] || []).push(f) })
+  const offenders = Object.entries(byUser).map(([uid, list]) => ({ uid, list, count: list.length })).sort((a, b) => b.count - a.count)
+
+  return (
+    <div>
+      <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#0B0B0B', marginBottom: '4px' }}>Contact-sharing attempts</h2>
+      <p style={{ fontSize: '13px', color: '#64748B', marginBottom: '1.25rem' }}>Messages blocked for trying to share or request phone numbers, emails, or social handles. Repeat offenders are listed first.</p>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        <CFStat label="Blocked attempts" value={flags.length} />
+        <CFStat label="People involved" value={offenders.length} />
+        <CFStat label="Repeat offenders (2+)" value={offenders.filter(o => o.count >= 2).length} />
+      </div>
+      {offenders.length === 0 ? (
+        <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748B', border: '1px dashed #E2E8F0', borderRadius: '12px' }}>No blocked contact-sharing attempts yet. 🎉</div>
+      ) : offenders.map(o => {
+        const who = nameOf(o.uid)
+        const hot = o.count >= 3
+        return (
+          <div key={o.uid} style={{ border: '1px solid #E2E8F0', borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: hot ? '#FEF2F2' : '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+              <div style={{ fontSize: '14px', fontWeight: '700', color: '#0B0B0B' }}>{who.name}{who.role && <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748B' }}> · {who.role}</span>}</div>
+              <span style={{ fontSize: '12px', fontWeight: '800', color: hot ? '#B91C1C' : '#854D0E', background: hot ? '#FEE2E2' : '#FEF9C3', padding: '2px 10px', borderRadius: '20px' }}>{o.count} attempt{o.count !== 1 ? 's' : ''}</span>
+            </div>
+            <div>
+              {o.list.slice(0, 20).map(f => (
+                <div key={f.id} style={{ padding: '8px 16px', borderBottom: '1px solid #F1F5F9', fontSize: '13px', color: '#334155', display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                  <span style={{ flex: 1, wordBreak: 'break-word' }}>&ldquo;{f.content}&rdquo;</span>
+                  <span style={{ fontSize: '11px', color: '#94A3B8', whiteSpace: 'nowrap' }}>{f.created_at ? new Date(f.created_at).toLocaleString() : ''}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
