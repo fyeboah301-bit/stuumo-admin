@@ -236,6 +236,7 @@ function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, 
       { key: 'revenue', icon: '📈', label: 'Revenue' },
       { key: 'geography', icon: '🌍', label: 'Geography' },
       { key: 'announcements', icon: '📢', label: 'Announcements' },
+      { key: 'testimonials', icon: '💬', label: 'Testimonials' },
       { key: 'audit', icon: '📋', label: 'Audit Log' },
     ]}
   ]
@@ -863,6 +864,7 @@ export default function Dashboard() {
   const [referrals, setReferrals] = useState([])
   const [incompletTeachers, setIncompletTeachers] = useState([])
   const [announcements, setAnnouncements] = useState([])
+  const [testimonials, setTestimonials] = useState([])
   const [auditLogs, setAuditLogs] = useState([])
   const [flags, setFlags] = useState([])
   const [contactFlags, setContactFlags] = useState([])
@@ -930,6 +932,8 @@ export default function Dashboard() {
     })
     const { data: contactFlagData } = await supabase.from('flagged_messages').select('*').order('created_at', { ascending: false }).limit(1000)
     setContactFlags(contactFlagData || [])
+    const { data: testimonialData } = await supabase.from('testimonials').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: false })
+    setTestimonials(testimonialData || [])
     setLoading(false)
   }
 
@@ -1086,6 +1090,7 @@ export default function Dashboard() {
               {tab === 'revenue' && <RevenueTab payments={payments} bookings={bookings} allUsers={allUsers} teachers={teachers} />}
               {tab === 'geography' && <GeographyTab users={allUsers} teachers={teachers} />}
               {tab === 'announcements' && <AnnouncementsTab announcements={announcements} adminId={admin?.id} onRefresh={fetchAll} />}
+              {tab === 'testimonials' && <TestimonialsTab testimonials={testimonials} onRefresh={fetchAll} />}
               {tab === 'audit' && <AuditTab logs={auditLogs} allUsers={allUsers} />}
             </>
           )}
@@ -2736,3 +2741,111 @@ function ContactFlagsTab({ flags, allUsers }) {
     </div>
   )
 }
+
+
+function TestimonialsTab({ testimonials, onRefresh }) {
+  const blank = { name: '', role: 'parent', quote: '', avatar_url: '', rating: 5, is_published: true, sort_order: 0 }
+  const [form, setForm] = useState(blank)
+  const [editingId, setEditingId] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState('')
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const save = async () => {
+    if (!form.name.trim() || !form.quote.trim()) return
+    setSaving(true); setMsg('')
+    try {
+      const payload = {
+        name: form.name.trim(), role: form.role, quote: form.quote.trim(),
+        avatar_url: form.avatar_url.trim() || null,
+        rating: parseInt(form.rating) || 5, is_published: form.is_published,
+        sort_order: parseInt(form.sort_order) || 0,
+      }
+      if (editingId) { const { error } = await supabase.from('testimonials').update(payload).eq('id', editingId); if (error) throw error }
+      else { const { error } = await supabase.from('testimonials').insert(payload); if (error) throw error }
+      setMsg('✅ Saved.'); setForm(blank); setEditingId(null); onRefresh()
+    } catch (err) { setMsg('Error: ' + err.message + (/relation|does not exist/i.test(err.message) ? ' — run the testimonials.sql in Supabase first.' : '')) }
+    finally { setSaving(false) }
+  }
+  const edit = (t) => {
+    setEditingId(t.id)
+    setForm({ name: t.name || '', role: t.role || 'parent', quote: t.quote || '', avatar_url: t.avatar_url || '', rating: t.rating || 5, is_published: t.is_published, sort_order: t.sort_order || 0 })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  const togglePublish = async (t) => { await supabase.from('testimonials').update({ is_published: !t.is_published }).eq('id', t.id); onRefresh() }
+  const del = async (id) => { if (!window.confirm('Delete this testimonial?')) return; await supabase.from('testimonials').delete().eq('id', id); onRefresh() }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #E2E8F0' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#111', marginBottom: '4px' }}>{editingId ? '✏️ Edit testimonial' : '💬 New testimonial'}</h3>
+        <p style={{ fontSize: '13px', color: '#64748B', marginBottom: '1rem' }}>Add real, consented testimonials from parents, learners or teachers. Published ones appear on the homepage.</p>
+        {msg && <div style={{ background: msg.startsWith('✅') ? '#DCFCE7' : '#FEE2E2', color: msg.startsWith('✅') ? '#166534' : '#991B1B', padding: '10px 14px', borderRadius: '8px', fontSize: '14px', marginBottom: '1rem' }}>{msg}</div>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div><label style={formLbl}>Name *</label><input style={formInp} placeholder="e.g. Ama K." value={form.name} onChange={e => set('name', e.target.value)} /></div>
+            <div>
+              <label style={formLbl}>Role</label>
+              <select style={{ ...formInp, cursor: 'pointer' }} value={form.role} onChange={e => set('role', e.target.value)}>
+                <option value="parent">Parent</option>
+                <option value="learner">Learner</option>
+                <option value="teacher">Teacher</option>
+              </select>
+            </div>
+          </div>
+          <div><label style={formLbl}>Quote *</label><textarea style={{ ...formInp, height: '90px', resize: 'vertical' }} placeholder="What they said about Stuumo..." value={form.quote} onChange={e => set('quote', e.target.value)} /></div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+            <div>
+              <label style={formLbl}>Rating</label>
+              <select style={{ ...formInp, cursor: 'pointer' }} value={form.rating} onChange={e => set('rating', e.target.value)}>
+                {[5, 4, 3, 2, 1].map(r => <option key={r} value={r}>{r} ★</option>)}
+              </select>
+            </div>
+            <div><label style={formLbl}>Sort order</label><input type="number" style={formInp} value={form.sort_order} onChange={e => set('sort_order', e.target.value)} /></div>
+            <div>
+              <label style={formLbl}>Published</label>
+              <select style={{ ...formInp, cursor: 'pointer' }} value={form.is_published ? '1' : '0'} onChange={e => set('is_published', e.target.value === '1')}>
+                <option value="1">Yes</option>
+                <option value="0">No (hidden)</option>
+              </select>
+            </div>
+          </div>
+          <div><label style={formLbl}>Photo URL (optional)</label><input style={formInp} placeholder="https://... (leave blank for initial avatar)" value={form.avatar_url} onChange={e => set('avatar_url', e.target.value)} /></div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={save} disabled={saving || !form.name.trim() || !form.quote.trim()} style={{ padding: '11px 24px', background: '#6D28D9', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontWeight: '700', fontFamily: 'inherit', opacity: (!form.name.trim() || !form.quote.trim()) ? 0.5 : 1 }}>
+              {saving ? 'Saving...' : editingId ? 'Save changes' : 'Add testimonial'}
+            </button>
+            {editingId && <button onClick={() => { setForm(blank); setEditingId(null); setMsg('') }} style={{ padding: '11px 20px', background: '#fff', color: '#374151', border: '1px solid #E2E8F0', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontWeight: '600', fontFamily: 'inherit' }}>Cancel</button>}
+          </div>
+        </div>
+      </div>
+
+      <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#111', margin: 0 }}>All testimonials ({testimonials.length})</h3>
+      {testimonials.length === 0 ? <Empty text="No testimonials yet. Add real ones above — they'll show on the homepage." /> : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {testimonials.map(t => (
+            <div key={t.id} style={{ background: '#fff', borderRadius: '12px', padding: '1.25rem 1.5rem', border: '1px solid #E2E8F0', opacity: t.is_published ? 1 : 0.6 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '8px' }}>
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: '700', color: '#111', marginBottom: '4px' }}>{t.name} <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748B', textTransform: 'capitalize' }}>· {t.role || 'user'}</span></div>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', color: '#D97706' }}>{'★'.repeat(t.rating || 5)}</span>
+                    <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', fontWeight: '600', background: t.is_published ? '#DCFCE7' : '#F1F5F9', color: t.is_published ? '#166534' : '#64748B' }}>{t.is_published ? 'Published' : 'Hidden'}</span>
+                    <span style={{ fontSize: '11px', color: '#94A3B8' }}>order {t.sort_order}</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                  <button onClick={() => edit(t)} style={{ padding: '5px 12px', background: '#EDE9FE', color: '#5B21B6', border: '1px solid #DDD6FE', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: '600' }}>Edit</button>
+                  <button onClick={() => togglePublish(t)} style={{ padding: '5px 12px', background: '#F1F5F9', color: '#374151', border: '1px solid #E2E8F0', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: '600' }}>{t.is_published ? 'Hide' : 'Publish'}</button>
+                  <button onClick={() => del(t.id)} style={{ padding: '5px 12px', background: '#FEE2E2', color: '#991B1B', border: '1px solid #FECACA', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: '600' }}>Delete</button>
+                </div>
+              </div>
+              <p style={{ fontSize: '14px', color: '#374151', lineHeight: '1.6', margin: 0, fontStyle: 'italic' }}>&ldquo;{t.quote}&rdquo;</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
