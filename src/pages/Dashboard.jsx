@@ -529,13 +529,14 @@ function ApplicationDetail({ teacher, onApprove, onReject }) {
   )
 }
 
-function TeacherDetail({ teacher, allReviews, allBookings, onVerify, onSuspend, onUpdateProfile }) {
+function TeacherDetail({ teacher, allReviews, allBookings, onVerify, onSuspend, onUpdateProfile, onUpdateTeacher }) {
   const [docs, setDocs] = useState([])
   const [certs, setCerts] = useState([])
   const [loading, setLoading] = useState(true)
   const [pendingAction, setPendingAction] = useState(null)
   const [editing, setEditing] = useState(false)
   const [editForm, setEditForm] = useState({ full_name: teacher.profiles?.full_name || '', phone: teacher.profiles?.phone || '', city: teacher.profiles?.city || '', country: teacher.profiles?.country || '' })
+  const [teachForm, setTeachForm] = useState({ hourly_rate: teacher.hourly_rate ?? '', years_experience: teacher.years_experience ?? '', bio: teacher.bio || '', languages: (teacher.languages || []).join(', ') })
   const [saving, setSaving] = useState(false)
   const teacherReviews = allReviews.filter(r => r.teacher_id === teacher.id)
   const teacherBookings = allBookings.filter(b => b.teacher_id === teacher.id)
@@ -557,6 +558,16 @@ function TeacherDetail({ teacher, allReviews, allBookings, onVerify, onSuspend, 
   const saveProfile = async () => {
     setSaving(true)
     if (onUpdateProfile) await onUpdateProfile(teacher.id, editForm)
+    setSaving(false); setEditing(false)
+  }
+  const saveTeaching = async () => {
+    setSaving(true)
+    if (onUpdateTeacher) await onUpdateTeacher(teacher.id, {
+      hourly_rate: teachForm.hourly_rate ? parseFloat(teachForm.hourly_rate) : 0,
+      years_experience: teachForm.years_experience ? parseInt(teachForm.years_experience) : null,
+      bio: teachForm.bio,
+      languages: teachForm.languages ? teachForm.languages.split(',').map(l => l.trim()).filter(Boolean) : [],
+    })
     setSaving(false); setEditing(false)
   }
 
@@ -584,7 +595,16 @@ function TeacherDetail({ teacher, allReviews, allBookings, onVerify, onSuspend, 
             {[['Full name','full_name'],['Phone','phone'],['City','city'],['Country','country']].map(([label, key]) => (
               <div key={key}><label style={formLbl}>{label}</label><input style={formInp} value={editForm[key]} onChange={e => setEditForm(f => ({ ...f, [key]: e.target.value }))} /></div>
             ))}
-            <button onClick={saveProfile} disabled={saving} style={{ ...btnGreen, padding: '10px', fontSize: '14px', width: '100%', borderRadius: '8px' }}>{saving ? 'Saving...' : '✓ Save profile changes'}</button>
+            <button onClick={saveProfile} disabled={saving} style={{ ...btnGreen, padding: '10px', fontSize: '14px', width: '100%', borderRadius: '8px' }}>{saving ? 'Saving...' : '✓ Save contact details'}</button>
+            <div style={{ height: '1px', background: '#E2E8F0', margin: '6px 0' }} />
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#111' }}>Teaching details</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div><label style={formLbl}>Hourly rate (GH₵)</label><input type="number" min="0" step="5" style={formInp} value={teachForm.hourly_rate} onChange={e => setTeachForm(f => ({ ...f, hourly_rate: e.target.value }))} /></div>
+              <div><label style={formLbl}>Years experience</label><input type="number" min="0" style={formInp} value={teachForm.years_experience} onChange={e => setTeachForm(f => ({ ...f, years_experience: e.target.value }))} /></div>
+            </div>
+            <div><label style={formLbl}>Bio</label><textarea style={{ ...formInp, height: '90px', resize: 'vertical' }} value={teachForm.bio} onChange={e => setTeachForm(f => ({ ...f, bio: e.target.value }))} /></div>
+            <div><label style={formLbl}>Languages (comma-separated)</label><input style={formInp} value={teachForm.languages} onChange={e => setTeachForm(f => ({ ...f, languages: e.target.value }))} placeholder="English, Twi, French" /></div>
+            <button onClick={saveTeaching} disabled={saving} style={{ ...btnGreen, padding: '10px', fontSize: '14px', width: '100%', borderRadius: '8px' }}>{saving ? 'Saving...' : '✓ Save teaching details (rate, bio, etc.)'}</button>
           </div>
         </DrawerSection>
       )}
@@ -954,6 +974,12 @@ export default function Dashboard() {
     await log('Profile edited by admin', 'user', id, changes)
     showMsg('✅ Profile updated.'); fetchAll()
   }
+  const updateTeacherProfile = async (id, data) => {
+    await supabase.from('teachers').update(data).eq('id', id)
+    const changes = Object.entries(data).map(([k, v]) => `${k}: ${v}`).join(', ')
+    await log('Teaching details edited by admin', 'teacher', id, changes)
+    showMsg('✅ Teaching details updated.'); fetchAll()
+  }
 
   const updateBookingStatus = async (bookingId, status) => {
     const booking = bookings.find(b => b.id === bookingId)
@@ -1042,7 +1068,7 @@ export default function Dashboard() {
               {tab === 'certificates' && <CertificatesTab certificates={certificates} onUpdate={updateCert} onRefresh={fetchAll} setMessage={showMsg} log={log} teachers={teachers} />}
               {tab === 'documents' && <DocumentsTab documents={documents} onUpdate={updateDoc} onRefresh={fetchAll} setMessage={showMsg} log={log} teachers={teachers} />}
               {tab === 'photos' && <PhotoReviewsTab users={allUsers} onApprove={approvePhoto} onReject={rejectPhoto} />}
-              {tab === 'teachers' && <TeachersTab teachers={teachers} allReviews={reviews} allBookings={bookings} onVerify={updateTeacher} onSuspend={suspendUser} onDelete={deleteUser} onUpdateProfile={updateUserProfile} />}
+              {tab === 'teachers' && <TeachersTab teachers={teachers} allReviews={reviews} allBookings={bookings} onVerify={updateTeacher} onSuspend={suspendUser} onDelete={deleteUser} onUpdateProfile={updateUserProfile} onUpdateTeacher={updateTeacherProfile} />}
               {tab === 'learners' && <LearnersTab users={allUsers.filter(u => u.role === 'learner')} allBookings={bookings} onSuspend={suspendUser} onDelete={deleteUser} onUpdateProfile={updateUserProfile} />}
               {tab === 'parents' && <ParentsTab users={allUsers.filter(u => u.role === 'parent')} allBookings={bookings} onSuspend={suspendUser} onDelete={deleteUser} onUpdateProfile={updateUserProfile} />}
               {tab === 'users' && <UsersTab users={allUsers} allBookings={bookings} onSuspend={suspendUser} onDelete={deleteUser} onRefresh={fetchAll} setMessage={showMsg} log={log} onUpdateProfile={updateUserProfile} />}
@@ -1479,7 +1505,7 @@ function DocumentsTab({ documents, onUpdate, onRefresh, setMessage, log, teacher
   )
 }
 
-function TeachersTab({ teachers, allReviews, allBookings, onVerify, onSuspend, onDelete, onUpdateProfile }) {
+function TeachersTab({ teachers, allReviews, allBookings, onVerify, onSuspend, onDelete, onUpdateProfile, onUpdateTeacher }) {
   const [f, setF] = useState({ search: '', verified: 'all', status: 'all', country: '', city: '' })
   const [selected, setSelected] = useState(null)
   const [pendingAction, setPendingAction] = useState(null)
@@ -1497,7 +1523,7 @@ function TeachersTab({ teachers, allReviews, allBookings, onVerify, onSuspend, o
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {pendingAction && <ReasonModal title={pendingAction.title} description={pendingAction.description} confirmLabel={pendingAction.confirmLabel} confirmStyle={pendingAction.style} onConfirm={(reason) => { pendingAction.onConfirm(reason); setPendingAction(null) }} onCancel={() => setPendingAction(null)} />}
       <DetailDrawer open={!!selected} onClose={() => setSelected(null)} title="Teacher Profile" subtitle={selected?.profiles?.full_name}>
-        {selected && <TeacherDetail teacher={selected} allReviews={allReviews} allBookings={allBookings} onVerify={onVerify} onSuspend={onSuspend} onUpdateProfile={onUpdateProfile} />}
+        {selected && <TeacherDetail teacher={selected} allReviews={allReviews} allBookings={allBookings} onVerify={onVerify} onSuspend={onSuspend} onUpdateProfile={onUpdateProfile} onUpdateTeacher={onUpdateTeacher} />}
       </DetailDrawer>
       <FilterBar filters={[
         { key: 'search', label: 'Search', type: 'text', value: f.search, placeholder: 'Teacher name...', width: '160px' },
