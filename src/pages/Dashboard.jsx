@@ -2748,8 +2748,22 @@ function TestimonialsTab({ testimonials, onRefresh }) {
   const [form, setForm] = useState(blank)
   const [editingId, setEditingId] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [msg, setMsg] = useState('')
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const uploadPhoto = async (file) => {
+    if (!file) return
+    setUploading(true); setMsg('')
+    try {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+      const fileName = `testimonials/${Date.now()}.${ext}`
+      const { error } = await supabase.storage.from('avatars').upload(fileName, file, { upsert: true })
+      if (error) throw error
+      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
+      set('avatar_url', data.publicUrl)
+    } catch (err) { setMsg('Upload error: ' + err.message) }
+    finally { setUploading(false) }
+  }
 
   const save = async () => {
     if (!form.name.trim() || !form.quote.trim()) return
@@ -2810,7 +2824,20 @@ function TestimonialsTab({ testimonials, onRefresh }) {
               </select>
             </div>
           </div>
-          <div><label style={formLbl}>Photo URL (optional)</label><input style={formInp} placeholder="https://... (leave blank for initial avatar)" value={form.avatar_url} onChange={e => set('avatar_url', e.target.value)} /></div>
+          <div>
+            <label style={formLbl}>Photo (optional)</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {form.avatar_url
+                ? <img src={form.avatar_url} alt="" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #E2E8F0' }} />
+                : <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#EDE9FE', color: '#6D28D9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '18px' }}>{(form.name || '?').charAt(0).toUpperCase()}</div>}
+              <label style={{ padding: '8px 14px', background: '#F1F5F9', color: '#374151', border: '1px solid #E2E8F0', borderRadius: '8px', fontSize: '13px', cursor: uploading ? 'wait' : 'pointer', fontWeight: '600' }}>
+                {uploading ? 'Uploading...' : form.avatar_url ? 'Change photo' : 'Upload photo'}
+                <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploading} onChange={e => { if (e.target.files && e.target.files[0]) uploadPhoto(e.target.files[0]); e.target.value = '' }} />
+              </label>
+              {form.avatar_url && <button onClick={() => set('avatar_url', '')} style={{ padding: '8px 12px', background: '#FEE2E2', color: '#991B1B', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '600' }}>Remove</button>}
+            </div>
+            <input style={{ ...formInp, marginTop: '8px', fontSize: '12px' }} placeholder="or paste an image URL" value={form.avatar_url} onChange={e => set('avatar_url', e.target.value)} />
+          </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button onClick={save} disabled={saving || !form.name.trim() || !form.quote.trim()} style={{ padding: '11px 24px', background: '#6D28D9', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontWeight: '700', fontFamily: 'inherit', opacity: (!form.name.trim() || !form.quote.trim()) ? 0.5 : 1 }}>
               {saving ? 'Saving...' : editingId ? 'Save changes' : 'Add testimonial'}
