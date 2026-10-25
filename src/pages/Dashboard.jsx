@@ -155,11 +155,13 @@ function DrawerSection({ title, children }) {
 }
 
 function StatCard({ icon, label, value, color }) {
+  const c = color || '#6D28D9'
   return (
-    <div style={{ background: '#fff', borderRadius: '12px', padding: '1.25rem', border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-      <div style={{ fontSize: '24px', marginBottom: '8px' }}>{icon}</div>
-      <div style={{ fontFamily: 'Georgia, serif', fontSize: '24px', fontWeight: '700', color: color || '#111' }}>{value}</div>
-      <div style={{ fontSize: '13px', color: '#64748B', marginTop: '4px' }}>{label}</div>
+    <div className="s-card" style={{ background: '#fff', borderRadius: '14px', padding: '1.2rem 1.35rem', border: '1px solid #EEF1F6', boxShadow: '0 1px 2px rgba(16,24,40,0.04), 0 6px 16px rgba(16,24,40,0.05)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: c }} />
+      <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: c + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '19px', marginBottom: '12px' }}>{icon}</div>
+      <div style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: '700', color: c, lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: '12.5px', color: '#64748B', marginTop: '6px', fontWeight: '600' }}>{label}</div>
     </div>
   )
 }
@@ -205,7 +207,9 @@ function ViewFileBtn({ url, name, label = 'View' }) {
   )
 }
 
-function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, pendingPhotos, pendingFlags, pendingPayouts, pendingRefunds, incompletCount, contactFlagCount }) {
+function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, pendingPhotos, pendingFlags, pendingPayouts, pendingRefunds, incompletCount, contactFlagCount, isNarrow, navOpen, setNavOpen }) {
+  const [collapsed, setCollapsed] = useState({})
+  const attention = (pendingApplications||0)+(pendingCerts||0)+(pendingDocs||0)+(pendingPhotos||0)+(pendingFlags||0)+(pendingPayouts||0)+(pendingRefunds||0)+(contactFlagCount||0)
   const groups = [
     { label: null, items: [{ key: 'overview', icon: '📊', label: 'Overview' }] },
     { label: 'People', items: [
@@ -242,14 +246,27 @@ function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, 
     ]}
   ]
   return (
-    <aside style={{ width: '220px', background: '#4C1D95', flexShrink: 0, display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
+    <>
+    {isNarrow && navOpen && <div onClick={() => setNavOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 290 }} />}
+    <aside style={{ width: '220px', background: '#4C1D95', flexShrink: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto', position: isNarrow ? 'fixed' : 'sticky', top: 0, left: 0, height: '100vh', zIndex: 300, transform: (isNarrow && !navOpen) ? 'translateX(-100%)' : 'none', transition: 'transform 0.2s ease', boxShadow: (isNarrow && navOpen) ? '0 0 40px rgba(0,0,0,0.3)' : 'none' }}>
+      {attention > 0 && (
+        <button onClick={() => { setTab('overview'); if (isNarrow) setNavOpen(false) }} style={{ margin: '10px 10px 2px', padding: '10px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#EF4444', color: '#fff', fontSize: '11px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{attention}</span>
+          <span style={{ fontSize: '12px', fontWeight: '600', color: 'rgba(255,255,255,0.9)' }}>need attention</span>
+        </button>
+      )}
       <div style={{ flex: 1, padding: '8px' }}>
         {groups.map((group, gi) => (
           <div key={gi} style={{ marginBottom: '4px' }}>
-            {group.label && <div style={{ fontSize: '10px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '1px', padding: '10px 12px 4px' }}>{group.label}</div>}
-            {group.items.map(item => (
-              <button key={item.key} onClick={() => setTab(item.key)}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 12px', border: 'none', borderRadius: '8px', background: tab === item.key ? '#6D28D9' : 'transparent', color: tab === item.key ? '#fff' : '#94A3B8', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: tab === item.key ? '700' : '400', textAlign: 'left', marginBottom: '1px', transition: 'all 0.12s' }}>
+            {group.label && (
+              <button onClick={() => setCollapsed(c => ({ ...c, [group.label]: !c[group.label] }))} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: '10px 12px 4px' }}>
+                <span style={{ fontSize: '10px', fontWeight: '700', color: '#A78BDA', textTransform: 'uppercase', letterSpacing: '1px' }}>{group.label}</span>
+                <span style={{ fontSize: '9px', color: '#A78BDA', transform: collapsed[group.label] ? 'rotate(-90deg)' : 'none', transition: 'transform 0.15s' }}>▾</span>
+              </button>
+            )}
+            {!collapsed[group.label] && group.items.map(item => (
+              <button key={item.key} onClick={() => { setTab(item.key); if (isNarrow) setNavOpen(false) }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 12px', border: 'none', borderLeft: tab === item.key ? '3px solid #fff' : '3px solid transparent', borderRadius: '8px', background: tab === item.key ? '#6D28D9' : 'transparent', color: tab === item.key ? '#fff' : '#B9A5DE', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: tab === item.key ? '700' : '500', textAlign: 'left', marginBottom: '1px', transition: 'all 0.12s' }}>
                 <span style={{ fontSize: '14px', flexShrink: 0 }}>{item.icon}</span>
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
                 {item.badge != null && <span style={{ fontSize: '11px', fontWeight: '700', padding: '1px 6px', borderRadius: '20px', background: item.badgeRed ? '#FEE2E2' : '#FEF9C3', color: item.badgeRed ? '#991B1B' : '#854D0E', flexShrink: 0 }}>{item.badge}</span>}
@@ -259,6 +276,7 @@ function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, 
         ))}
       </div>
     </aside>
+    </>
   )
 }
 
@@ -870,6 +888,9 @@ export default function Dashboard() {
   const [incompletTeachers, setIncompletTeachers] = useState([])
   const [announcements, setAnnouncements] = useState([])
   const [testimonials, setTestimonials] = useState([])
+  const [isNarrow, setIsNarrow] = useState(typeof window !== 'undefined' && window.innerWidth < 900)
+  const [navOpen, setNavOpen] = useState(false)
+  useEffect(() => { const h = () => setIsNarrow(window.innerWidth < 900); window.addEventListener('resize', h); return () => window.removeEventListener('resize', h) }, [])
   const [auditLogs, setAuditLogs] = useState([])
   const [flags, setFlags] = useState([])
   const [contactFlags, setContactFlags] = useState([])
@@ -1049,18 +1070,38 @@ export default function Dashboard() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'Tahoma, Geneva, sans-serif', color: '#111', display: 'flex', flexDirection: 'column' }}>
+      <style>{`
+        *::-webkit-scrollbar { width: 10px; height: 10px; }
+        *::-webkit-scrollbar-track { background: transparent; }
+        *::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 6px; border: 2px solid transparent; background-clip: content-box; }
+        *::-webkit-scrollbar-thumb:hover { background: #94A3B8; background-clip: content-box; }
+        aside::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.22); background-clip: content-box; }
+        body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        .s-card { transition: transform .15s ease, box-shadow .15s ease; }
+        .s-card:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(16,24,40,0.10); }
+      `}</style>
       <nav style={{ background: '#6D28D9', borderBottom: '1px solid rgba(255,255,255,0.15)', padding: '0.875rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {isNarrow && <button onClick={() => setNavOpen(o => !o)} aria-label="Menu" style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>☰</button>}
           <div style={{ fontFamily: "'Roboto Serif', Georgia, serif", fontSize: '22px', fontWeight: '700', color: '#fff' }}>Stuumo</div>
           <span style={{ fontSize: '11px', background: '#FFFFFF', color: '#6D28D9', padding: '2px 10px', borderRadius: '20px', fontWeight: '700' }}>ADMIN</span>
         </div>
+        {!isNarrow && (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {[[pendingApplications, 'applications', '🚀'], [pendingPayouts, 'payouts', '💰'], [pendingRefunds, 'refunds', '↩️']].filter(([n]) => n > 0).map(([n, key, icon]) => (
+              <button key={key} onClick={() => setTab(key)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 11px', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.22)', borderRadius: '20px', color: '#fff', fontSize: '12px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>
+                <span>{icon}</span><span>{n}</span><span style={{ opacity: 0.85, fontWeight: '500', textTransform: 'capitalize' }}>{key}</span>
+              </button>
+            ))}
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)' }}>{admin?.full_name}</span>
           <button onClick={async () => { await signOut(); navigate('/login') }} style={{ padding: '7px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.35)', color: '#fff', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}>Sign out</button>
         </div>
       </nav>
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <Sidebar tab={tab} setTab={setTab} pendingApplications={pendingApplications} pendingCerts={stats.pendingCerts} pendingDocs={stats.pendingDocs} pendingPhotos={pendingPhotos} pendingFlags={pendingFlags} pendingPayouts={pendingPayouts} pendingRefunds={pendingRefunds} incompletCount={incompletTeachers.length} contactFlagCount={contactFlags.length} />
+        <Sidebar tab={tab} setTab={setTab} pendingApplications={pendingApplications} pendingCerts={stats.pendingCerts} pendingDocs={stats.pendingDocs} pendingPhotos={pendingPhotos} pendingFlags={pendingFlags} pendingPayouts={pendingPayouts} pendingRefunds={pendingRefunds} incompletCount={incompletTeachers.length} contactFlagCount={contactFlags.length} isNarrow={isNarrow} navOpen={navOpen} setNavOpen={setNavOpen} />
         <main style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 2rem' }}>
           {message && (
             <div style={{ background: message.startsWith('✅') ? '#DCFCE7' : '#FEE2E2', color: message.startsWith('✅') ? '#166534' : '#991B1B', padding: '12px 16px', borderRadius: '10px', fontSize: '14px', marginBottom: '1.25rem', border: `1px solid ${message.startsWith('✅') ? '#BBF7D0' : '#FECACA'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1109,9 +1150,11 @@ function OverviewTab({ stats, bookings, teachers, pendingApplications, pendingPa
   const needsAttention = pendingApplications + pendingPayouts + pendingRefunds + pendingCerts + pendingDocs + pendingPhotos + pendingFlags
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div style={{ fontSize: '12px', fontWeight: '800', color: '#64748B', textTransform: 'uppercase', letterSpacing: '1px', margin: '2px 0 -6px 2px' }}>Community</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
         {[['👥','Total users',stats.totalUsers,'#6D28D9'],['👩‍🏫','Teachers',stats.teachers,'#7C3AED'],['📚','Learners',stats.learners,'#059669'],['👨‍👩‍👧','Parents',stats.parents,'#D97706']].map(([icon,label,value,color]) => <StatCard key={label} icon={icon} label={label} value={value} color={color} />)}
       </div>
+      <div style={{ fontSize: '12px', fontWeight: '800', color: '#64748B', textTransform: 'uppercase', letterSpacing: '1px', margin: '2px 0 -6px 2px' }}>Activity &amp; revenue</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
         {[['📅','Total bookings',stats.totalBookings,'#0891B2'],['🎥','Live sessions',stats.totalSessions,'#7C3AED'],['✅','Verified teachers',stats.verified,'#059669'],['💰','Net GMV',`GH₵ ${((stats.totalRevenue||0) - (stats.refundedTotal||0)).toFixed(2)}`,'#166534']].map(([icon,label,value,color]) => <StatCard key={label} icon={icon} label={label} value={value} color={color} />)}
       </div>
