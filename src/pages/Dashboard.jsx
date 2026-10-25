@@ -1060,7 +1060,9 @@ export default function Dashboard() {
     await supabase.from('teacher_documents').update({ status }).eq('id', docId)
     if (status === 'rejected' && teacherId) {
       await supabase.from('teachers').update({ application_stage: 'resubmission_needed' }).eq('id', teacherId)
-      await supabase.from('notifications').insert({ user_id: teacherId, title: 'Document needs resubmission', message: 'A document on your application was not approved. Please log in and re-upload it to continue.', type: 'document', link: '/dashboard' })
+      await supabase.from('notifications').insert({ user_id: teacherId, title: 'Document needs resubmission', message: 'A document on your application was not approved. Check your email for a secure link to re-upload it.', type: 'document', link: '/dashboard' })
+      const { data: prof } = await supabase.from('profiles').select('full_name, email').eq('id', teacherId).single()
+      if (prof?.email) { try { await supabase.functions.invoke('send-resubmission-link', { body: { email: prof.email, name: prof.full_name } }) } catch (e) {} }
     }
     await log(`Document ${status}`, 'document', docId)
     showMsg(`✅ Document ${status}.`); fetchAll()
@@ -1069,14 +1071,18 @@ export default function Dashboard() {
     await supabase.from('certificates').update({ status }).eq('id', certId)
     if (status === 'rejected' && teacherId) {
       await supabase.from('teachers').update({ application_stage: 'resubmission_needed' }).eq('id', teacherId)
-      await supabase.from('notifications').insert({ user_id: teacherId, title: 'Certificate needs resubmission', message: 'A certificate on your application was not approved. Please log in and re-upload it to continue.', type: 'certificate', link: '/dashboard' })
+      await supabase.from('notifications').insert({ user_id: teacherId, title: 'Certificate needs resubmission', message: 'A certificate on your application was not approved. Check your email for a secure link to re-upload it.', type: 'certificate', link: '/dashboard' })
+      const { data: prof } = await supabase.from('profiles').select('full_name, email').eq('id', teacherId).single()
+      if (prof?.email) { try { await supabase.functions.invoke('send-resubmission-link', { body: { email: prof.email, name: prof.full_name } }) } catch (e) {} }
     }
     await log(`Certificate ${status}`, 'certificate', certId)
     showMsg(`✅ Certificate ${status}.`); fetchAll()
   }
   const declinePhotoReg = async (teacherId, name = '') => {
     await supabase.from('teachers').update({ application_stage: 'resubmission_needed' }).eq('id', teacherId)
-    await supabase.from('notifications').insert({ user_id: teacherId, title: 'Profile photo needs resubmission', message: 'Your profile photo was not approved. Please log in and upload a clearer one.', type: 'profile', link: '/dashboard' })
+    await supabase.from('notifications').insert({ user_id: teacherId, title: 'Profile photo needs resubmission', message: 'Your profile photo was not approved. Check your email for a secure link to upload a clearer one.', type: 'profile', link: '/dashboard' })
+    const { data: pf } = await supabase.from('profiles').select('email').eq('id', teacherId).single()
+    if (pf?.email) { try { await supabase.functions.invoke('send-resubmission-link', { body: { email: pf.email, name } }) } catch (e) {} }
     await log('Profile photo declined (resubmission)', 'user', teacherId, name)
     showMsg('✅ Photo declined — resubmission requested.'); fetchAll()
   }
