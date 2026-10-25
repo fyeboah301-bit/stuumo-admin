@@ -901,7 +901,7 @@ export default function Dashboard() {
       { data: referralData }, { data: announcementData }, { data: auditData }, { data: flagData },
       { data: enrollData }
     ] = await Promise.all([
-      supabase.from('teachers').select('*, profiles (full_name, city, country, avatar_url, status, email, phone)').order('is_verified', { ascending: true }),
+      supabase.from('teachers').select('*, profiles (full_name, city, country, avatar_url, status, email, phone, created_at)').order('is_verified', { ascending: true }),
       supabase.from('certificates').select('*, teachers:teacher_id (profiles (full_name))').order('uploaded_at', { ascending: false }),
       supabase.from('teacher_documents').select('*, profiles:teacher_id (full_name)').order('uploaded_at', { ascending: false }),
       supabase.from('reviews').select('*, reviewer:reviewer_id (full_name), teacher:teacher_id (profiles (full_name))').order('created_at', { ascending: false }),
@@ -3138,17 +3138,53 @@ function RegItemRow({ title, subtitle, fileUrl, isCert, status, onApprove, onDec
 }
 
 function RegistrationView({ teacherId, teachers, documents, certificates, onReviewDoc, onReviewCert, onApprovePhoto, onDeclinePhoto, onApprove, onDecline }) {
-  const teacher = teachers.find(t => t.id === teacherId)
+  const found = teachers.find(x => x.id === teacherId)
+  const [t, setT] = useState(null)
+  useEffect(() => { if (found) setT(prev => prev || found) }, [found])
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [photoBusy, setPhotoBusy] = useState(false)
+  const [form, setForm] = useState({})
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const back = () => { window.location.href = '/dashboard' }
-  if (!teacher) return (
+  if (!t) return (
     <div style={{ padding: '3rem', textAlign: 'center', fontFamily: 'Tahoma, Geneva, sans-serif', color: '#64748B' }}>
       Loading registration…
       <div><button onClick={back} style={{ ...btnGhost, marginTop: '1rem' }}>Close</button></div>
     </div>
   )
-  const pr = teacher.profiles || {}
+  const pr = t.profiles || {}
   const docs = documents.filter(d => d.teacher_id === teacherId)
   const certs = certificates.filter(c => c.teacher_id === teacherId)
+  const startEdit = () => {
+    setForm({ full_name: pr.full_name || '', phone: pr.phone || '', city: pr.city || '', country: pr.country || '', bio: t.bio || '', years_experience: t.years_experience ?? '', hourly_rate: t.hourly_rate ?? '', languages: (t.languages || []).join(', '), subjects: (t.subjects || []).join(', '), teaching_levels: (t.teaching_levels || []).join(', ') })
+    setEditing(true)
+  }
+  const splitList = (v) => v ? v.split(',').map(x => x.trim()).filter(Boolean) : []
+  const save = async () => {
+    setSaving(true)
+    try {
+      await supabase.from('profiles').update({ full_name: form.full_name, phone: form.phone, city: form.city, country: form.country }).eq('id', t.id)
+      const tp = { bio: form.bio, years_experience: form.years_experience ? parseInt(form.years_experience) : null, hourly_rate: form.hourly_rate ? parseFloat(form.hourly_rate) : 0, languages: splitList(form.languages), subjects: splitList(form.subjects), teaching_levels: splitList(form.teaching_levels) }
+      await supabase.from('teachers').update(tp).eq('id', t.id)
+      setT(prev => ({ ...prev, ...tp, profiles: { ...prev.profiles, full_name: form.full_name, phone: form.phone, city: form.city, country: form.country } }))
+      setEditing(false)
+    } catch (e) { alert('Error saving: ' + e.message) } finally { setSaving(false) }
+  }
+  const uploadPhoto = async (file) => {
+    if (!file) return
+    setPhotoBusy(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `${t.id}/${Date.now()}.${ext}`
+      const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+      if (error) throw error
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+      await supabase.from('profiles').update({ avatar_url: data.publicUrl }).eq('id', t.id)
+      setT(prev => ({ ...prev, profiles: { ...prev.profiles, avatar_url: data.publicUrl } }))
+    } catch (e) { alert('Photo error: ' + e.message) } finally { setPhotoBusy(false) }
+  }
+  const fLbl = { fontSize: '12px', color: '#64748B', display: 'block', marginBottom: '4px', fontWeight: '700' }
   return (
     <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'Tahoma, Geneva, sans-serif', color: '#111' }}>
       <nav style={{ background: '#6D28D9', padding: '0.875rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -3165,46 +3201,82 @@ function RegistrationView({ teacherId, teachers, documents, certificates, onRevi
             <div style={{ fontSize: '20px', fontWeight: '700' }}>{pr.full_name}</div>
             <div style={{ fontSize: '13px', color: '#64748B' }}>{pr.email}{pr.city ? ' · ' + pr.city : ''}{pr.country ? ', ' + pr.country : ''}</div>
           </div>
-          <RegStageBadge stage={stageOfTeacher(teacher)} />
+          <RegStageBadge stage={stageOfTeacher(t)} />
         </div>
-
-        <RegCard title="About & experience">
-          <InfoRow label="Bio" value={teacher.bio} />
-          <InfoRow label="Experience" value={teacher.years_experience ? teacher.years_experience + ' yrs' : null} />
-          <InfoRow label="Rate" value={teacher.hourly_rate ? 'GH₵ ' + teacher.hourly_rate + '/hr' : null} />
-          <InfoRow label="Languages" value={(teacher.languages || []).join(', ')} />
-          <InfoRow label="Subjects" value={(teacher.subjects || []).join(', ')} />
-          <InfoRow label="Levels" value={(teacher.teaching_levels || []).join(', ')} />
-        </RegCard>
-
-        <PayoutInfo teacher={teacher} />
 
         <RegCard title="Profile photo">
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
             <AdminAvatar name={pr.full_name} url={pr.avatar_url} size={64} />
             {pr.avatar_url && <button onClick={() => window.open(pr.avatar_url, '_blank', 'noopener')} style={btnGhost}>View ↗</button>}
-            <button onClick={() => onDeclinePhoto(teacher.id, pr.full_name)} style={btnRed}>Decline photo</button>
+            <label style={{ ...btnGreen, cursor: photoBusy ? 'wait' : 'pointer' }}>
+              {photoBusy ? 'Uploading…' : 'Upload / replace'}
+              <input type="file" accept="image/*" style={{ display: 'none' }} disabled={photoBusy} onChange={e => { if (e.target.files && e.target.files[0]) uploadPhoto(e.target.files[0]); e.target.value = '' }} />
+            </label>
+            <button onClick={() => onDeclinePhoto(t.id, pr.full_name)} style={btnRed}>Decline (ask teacher)</button>
           </div>
         </RegCard>
+
+        <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '1.25rem 1.5rem', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <h3 style={{ fontSize: '13px', fontWeight: '800', color: '#111', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Profile & teaching details</h3>
+            {!editing && <button onClick={startEdit} style={btnGhost}>✏️ Edit</button>}
+          </div>
+          {!editing ? (
+            <>
+              <InfoRow label="Full name" value={pr.full_name} />
+              <InfoRow label="Phone" value={pr.phone} />
+              <InfoRow label="Location" value={[pr.city, pr.country].filter(Boolean).join(', ')} />
+              <InfoRow label="Bio" value={t.bio} />
+              <InfoRow label="Experience" value={t.years_experience ? t.years_experience + ' yrs' : null} />
+              <InfoRow label="Rate" value={t.hourly_rate ? 'GH₵ ' + t.hourly_rate + '/hr' : null} />
+              <InfoRow label="Languages" value={(t.languages || []).join(', ')} />
+              <InfoRow label="Subjects" value={(t.subjects || []).join(', ')} />
+              <InfoRow label="Levels" value={(t.teaching_levels || []).join(', ')} />
+            </>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div><label style={fLbl}>Full name</label><input style={formInp} value={form.full_name} onChange={e => set('full_name', e.target.value)} /></div>
+                <div><label style={fLbl}>Phone</label><input style={formInp} value={form.phone} onChange={e => set('phone', e.target.value)} /></div>
+                <div><label style={fLbl}>City</label><input style={formInp} value={form.city} onChange={e => set('city', e.target.value)} /></div>
+                <div><label style={fLbl}>Country</label><input style={formInp} value={form.country} onChange={e => set('country', e.target.value)} /></div>
+              </div>
+              <div><label style={fLbl}>Bio</label><textarea style={{ ...formInp, height: '80px', resize: 'vertical' }} value={form.bio} onChange={e => set('bio', e.target.value)} /></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div><label style={fLbl}>Years experience</label><input type="number" style={formInp} value={form.years_experience} onChange={e => set('years_experience', e.target.value)} /></div>
+                <div><label style={fLbl}>Hourly rate (GH₵)</label><input type="number" style={formInp} value={form.hourly_rate} onChange={e => set('hourly_rate', e.target.value)} /></div>
+              </div>
+              <div><label style={fLbl}>Languages (comma-separated)</label><input style={formInp} value={form.languages} onChange={e => set('languages', e.target.value)} /></div>
+              <div><label style={fLbl}>Subjects (comma-separated)</label><input style={formInp} value={form.subjects} onChange={e => set('subjects', e.target.value)} /></div>
+              <div><label style={fLbl}>Teaching levels (comma-separated)</label><input style={formInp} value={form.teaching_levels} onChange={e => set('teaching_levels', e.target.value)} /></div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={save} disabled={saving} style={{ ...btnGreen, padding: '9px 18px' }}>{saving ? 'Saving…' : '✓ Save changes'}</button>
+                <button onClick={() => setEditing(false)} style={{ ...btnGhost, padding: '9px 18px' }}>Cancel</button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <PayoutInfo teacher={t} />
 
         <RegCard title={`Documents (${docs.length})`}>
           {docs.length === 0 ? <div style={{ fontSize: '13px', color: '#94A3B8' }}>No documents uploaded.</div> : docs.map(d => (
             <RegItemRow key={d.id} title={d.document_type} subtitle={d.expiry_date ? 'Expires ' + d.expiry_date : null} status={d.status} fileUrl={d.file_url} isCert={false}
-              onApprove={() => onReviewDoc(d.id, 'approved', teacher.id)} onDecline={() => onReviewDoc(d.id, 'rejected', teacher.id)} />
+              onApprove={() => onReviewDoc(d.id, 'approved', t.id)} onDecline={() => onReviewDoc(d.id, 'rejected', t.id)} />
           ))}
         </RegCard>
 
         <RegCard title={`Certificates (${certs.length})`}>
           {certs.length === 0 ? <div style={{ fontSize: '13px', color: '#94A3B8' }}>No certificates uploaded.</div> : certs.map(c => (
             <RegItemRow key={c.id} title={c.certificate_name} subtitle={c.certificate_type} status={c.status} fileUrl={c.file_url} isCert={true}
-              onApprove={() => onReviewCert(c.id, 'approved', teacher.id)} onDecline={() => onReviewCert(c.id, 'rejected', teacher.id)} />
+              onApprove={() => onReviewCert(c.id, 'approved', t.id)} onDecline={() => onReviewCert(c.id, 'rejected', t.id)} />
           ))}
         </RegCard>
 
         <div style={{ display: 'flex', gap: '10px', marginTop: '1.5rem', flexWrap: 'wrap' }}>
-          <button onClick={() => { if (window.confirm('Approve this registration?')) onApprove(teacher.id, pr.full_name, teacher.id, pr.email) }} style={{ padding: '12px 24px', background: '#166534', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>✓ Approve registration</button>
-          <button onClick={() => { if (window.confirm('Decline and email the teacher the general message?')) onDecline(teacher, false) }} style={{ padding: '12px 24px', background: '#DC2626', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>Decline (email sent)</button>
-          <button onClick={() => { if (window.confirm('Decline silently? No notification will be sent to the teacher.')) onDecline(teacher, true) }} style={{ padding: '12px 24px', background: '#fff', color: '#991B1B', border: '1px solid #FECACA', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>Decline silently</button>
+          <button onClick={() => { if (window.confirm('Approve this registration?')) onApprove(t.id, pr.full_name, t.id, pr.email) }} style={{ padding: '12px 24px', background: '#166534', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>✓ Approve registration</button>
+          <button onClick={() => { if (window.confirm('Decline and email the teacher the general message?')) onDecline(t, false) }} style={{ padding: '12px 24px', background: '#DC2626', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>Decline (email sent)</button>
+          <button onClick={() => { if (window.confirm('Decline silently? No notification will be sent to the teacher.')) onDecline(t, true) }} style={{ padding: '12px 24px', background: '#fff', color: '#991B1B', border: '1px solid #FECACA', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>Decline silently</button>
         </div>
       </div>
     </div>
@@ -3214,12 +3286,30 @@ function RegistrationView({ teacherId, teachers, documents, certificates, onRevi
 function RegistrationsTab({ teachers, allUsers }) {
   const [role, setRole] = useState('teacher')
   const [stage, setStage] = useState('all')
+  const [period, setPeriod] = useState('all')
   const openReg = (id) => window.open('/dashboard?reg=' + id, '_blank', 'noopener')
+  const dateOf = (item) => role === 'teacher' ? item.profiles?.created_at : item.created_at
+  const inPeriod = (item) => {
+    if (period === 'all') return true
+    const d = dateOf(item); if (!d) return false
+    const days = Number(period)
+    return (Date.now() - new Date(d).getTime()) <= days * 24 * 60 * 60 * 1000
+  }
   const counts = {}
-  teachers.forEach(t => { const st = stageOfTeacher(t); counts[st] = (counts[st] || 0) + 1 })
-  const list = role === 'teacher'
+  teachers.filter(inPeriod).forEach(t => { const st = stageOfTeacher(t); counts[st] = (counts[st] || 0) + 1 })
+  const list = (role === 'teacher'
     ? teachers.filter(t => stage === 'all' || stageOfTeacher(t) === stage)
-    : allUsers.filter(u => u.role === role)
+    : allUsers.filter(u => u.role === role)).filter(inPeriod)
+  const exportCurrent = () => {
+    const rows = list.map(item => {
+      const prof = role === 'teacher' ? (item.profiles || {}) : item
+      const base = { name: prof.full_name || '', email: prof.email || '', phone: prof.phone || '', city: prof.city || '', country: prof.country || '', signed_up: dateOf(item) ? new Date(dateOf(item)).toLocaleDateString() : '' }
+      if (role === 'teacher') return { ...base, stage: stageOfTeacher(item), rate: item.hourly_rate || '', verified: item.is_verified ? 'yes' : 'no' }
+      return { role, ...base }
+    })
+    const label = role === 'teacher' ? (stage === 'all' ? 'all' : stage) : role
+    exportCSV(rows, `registrations-${role}-${label}.csv`)
+  }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '8px', border: '1px solid #E2E8F0', width: 'fit-content' }}>
@@ -3227,10 +3317,18 @@ function RegistrationsTab({ teachers, allUsers }) {
           <button key={k} onClick={() => { setRole(k); setStage('all') }} style={{ padding: '7px 18px', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', background: role === k ? '#6D28D9' : 'transparent', color: role === k ? '#fff' : '#64748B', fontWeight: role === k ? '700' : '400' }}>{l}</button>
         ))}
       </div>
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+          {[['all', 'All time'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['90', 'Last 90 days']].map(([k, l]) => (
+            <button key={k} onClick={() => setPeriod(k)} style={{ padding: '6px 12px', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', background: period === k ? '#EDE9FE' : 'transparent', color: period === k ? '#5B21B6' : '#64748B', fontWeight: period === k ? '700' : '500' }}>{l}</button>
+          ))}
+        </div>
+        <button onClick={exportCurrent} style={{ padding: '7px 14px', background: '#F1F5F9', color: '#374151', border: '1px solid #E2E8F0', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '700', fontFamily: 'inherit' }}>⬇ Download CSV</button>
+      </div>
       {role === 'teacher' && (
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           {[['all', 'All'], ...TEACHER_COHORTS].map(([k, l]) => {
-            const n = k === 'all' ? teachers.length : (counts[k] || 0)
+            const n = k === 'all' ? teachers.filter(inPeriod).length : (counts[k] || 0)
             return <button key={k} onClick={() => setStage(k)} style={{ padding: '6px 12px', borderRadius: '20px', border: stage === k ? '1.5px solid #6D28D9' : '1px solid #E2E8F0', background: stage === k ? '#EDE9FE' : '#fff', color: stage === k ? '#5B21B6' : '#64748B', fontSize: '12px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>{l} ({n})</button>
           })}
         </div>
