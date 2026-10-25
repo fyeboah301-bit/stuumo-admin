@@ -177,33 +177,25 @@ async function resolvePrivateDoc(fileUrl) {
 }
 
 function DocViewBtn({ fileUrl, name, label = '📄 View document' }) {
-  const [url, setUrl] = useState(null)
   const [loading, setLoading] = useState(false)
   const open = async () => {
     setLoading(true)
-    try { const u = await resolvePrivateDoc(fileUrl); setUrl(u) }
+    try { const u = await resolvePrivateDoc(fileUrl); if (u) window.open(u, '_blank', 'noopener'); else alert('Could not open document') }
     catch (e) { alert('Could not open document') }
     finally { setLoading(false) }
   }
   return (
-    <>
-      <button onClick={open} style={{ fontSize: '12px', color: '#6D28D9', fontWeight: '700', background: '#F5F3FF', border: '1px solid #DDD6FE', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
-        {loading ? '…' : label}
-      </button>
-      {url && <FilePreviewModal url={url} name={name} onClose={() => setUrl(null)} />}
-    </>
+    <button onClick={open} style={{ fontSize: '12px', color: '#6D28D9', fontWeight: '700', background: '#F5F3FF', border: '1px solid #DDD6FE', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+      {loading ? '…' : label}
+    </button>
   )
 }
 
 function ViewFileBtn({ url, name, label = 'View' }) {
-  const [preview, setPreview] = useState(false)
   return (
-    <>
-      <button onClick={() => setPreview(true)} style={{ fontSize: '12px', color: '#6D28D9', fontWeight: '700', background: '#F5F3FF', border: '1px solid #DDD6FE', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
-        {label}
-      </button>
-      {preview && <FilePreviewModal url={url} name={name} onClose={() => setPreview(false)} />}
-    </>
+    <button onClick={() => url && window.open(url, '_blank', 'noopener')} style={{ fontSize: '12px', color: '#6D28D9', fontWeight: '700', background: '#F5F3FF', border: '1px solid #DDD6FE', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+      {label}
+    </button>
   )
 }
 
@@ -214,6 +206,7 @@ function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, 
     { label: null, items: [{ key: 'overview', icon: '📊', label: 'Overview' }] },
     { label: 'People', items: [
       { key: 'applications', icon: '🚀', label: 'Applications', badge: pendingApplications || null },
+      { key: 'registrations', icon: '🗂️', label: 'Registrations' },
       { key: 'certificates', icon: '📋', label: 'Certificates', badge: pendingCerts || null },
       { key: 'documents', icon: '🪪', label: 'Documents', badge: pendingDocs || null },
       { key: 'photos', icon: '🖼️', label: 'Photo Reviews', badge: pendingPhotos || null },
@@ -1047,7 +1040,7 @@ export default function Dashboard() {
     showMsg('✅ Refund marked as processed.'); fetchAll()
   }
   const approveApplication = async (teacherId, teacherName, userId, teacherEmail) => {
-    await supabase.from('teachers').update({ application_status: 'approved', is_verified: true }).eq('id', teacherId)
+    await supabase.from('teachers').update({ application_status: 'approved', is_verified: true, application_stage: 'approved' }).eq('id', teacherId)
     if (teacherEmail) { try { await supabase.auth.resetPasswordForEmail(teacherEmail, { redirectTo: (import.meta.env.VITE_APP_URL || 'https://stuumo.com') + '/reset-password' }) } catch (e) { /* set-password email is non-blocking */ } }
     await supabase.from('notifications').insert({ user_id: userId, title: '🎉 Application approved!', message: 'Your teacher application has been approved! Check your email for a link to set your password and sign in.', type: 'application', link: '/dashboard' })
     if (teacherEmail) await sendEmail({ type: 'application_approved', teacherEmail, teacherName })
@@ -1055,18 +1048,55 @@ export default function Dashboard() {
     showMsg(`✅ ${teacherName}'s application approved.`); fetchAll()
   }
   const rejectApplication = async (teacherId, teacherName, userId, notes, teacherEmail) => {
-    await supabase.from('teachers').update({ application_status: 'rejected', application_notes: notes }).eq('id', teacherId)
+    await supabase.from('teachers').update({ application_status: 'rejected', application_notes: notes, application_stage: 'declined' }).eq('id', teacherId)
     await supabase.from('notifications').insert({ user_id: userId, title: 'Application update', message: `Your application was not approved. Reason: ${notes}`, type: 'application', link: '/dashboard' })
     if (teacherEmail) await sendEmail({ type: 'application_rejected', teacherEmail, teacherName, notes })
     await log('Application rejected', 'teacher', teacherId, `${teacherName}: ${notes}`)
     showMsg(`✅ ${teacherName}'s application rejected.`); fetchAll()
   }
 
+  const GENERAL_DECLINE = 'Unfortunately, your application has been declined as you did not meet the required criteria at this time.'
+  const reviewDoc = async (docId, status, teacherId) => {
+    await supabase.from('teacher_documents').update({ status }).eq('id', docId)
+    if (status === 'rejected' && teacherId) {
+      await supabase.from('teachers').update({ application_stage: 'resubmission_needed' }).eq('id', teacherId)
+      await supabase.from('notifications').insert({ user_id: teacherId, title: 'Document needs resubmission', message: 'A document on your application was not approved. Please log in and re-upload it to continue.', type: 'document', link: '/dashboard' })
+    }
+    await log(`Document ${status}`, 'document', docId)
+    showMsg(`✅ Document ${status}.`); fetchAll()
+  }
+  const reviewCert = async (certId, status, teacherId) => {
+    await supabase.from('certificates').update({ status }).eq('id', certId)
+    if (status === 'rejected' && teacherId) {
+      await supabase.from('teachers').update({ application_stage: 'resubmission_needed' }).eq('id', teacherId)
+      await supabase.from('notifications').insert({ user_id: teacherId, title: 'Certificate needs resubmission', message: 'A certificate on your application was not approved. Please log in and re-upload it to continue.', type: 'certificate', link: '/dashboard' })
+    }
+    await log(`Certificate ${status}`, 'certificate', certId)
+    showMsg(`✅ Certificate ${status}.`); fetchAll()
+  }
+  const declinePhotoReg = async (teacherId, name = '') => {
+    await supabase.from('teachers').update({ application_stage: 'resubmission_needed' }).eq('id', teacherId)
+    await supabase.from('notifications').insert({ user_id: teacherId, title: 'Profile photo needs resubmission', message: 'Your profile photo was not approved. Please log in and upload a clearer one.', type: 'profile', link: '/dashboard' })
+    await log('Profile photo declined (resubmission)', 'user', teacherId, name)
+    showMsg('✅ Photo declined — resubmission requested.'); fetchAll()
+  }
+  const declineRegistration = async (teacher, silent) => {
+    await supabase.from('teachers').update({ application_status: 'rejected', application_stage: silent ? 'declined_silent' : 'declined', decline_reason: silent ? null : GENERAL_DECLINE }).eq('id', teacher.id)
+    if (!silent) {
+      await supabase.from('notifications').insert({ user_id: teacher.id, title: 'Application update', message: GENERAL_DECLINE, type: 'application', link: '/dashboard' })
+      if (teacher.profiles?.email) await sendEmail({ type: 'application_rejected', teacherEmail: teacher.profiles.email, teacherName: teacher.profiles?.full_name, notes: GENERAL_DECLINE })
+    }
+    await log(silent ? 'Registration declined silently' : 'Registration declined', 'teacher', teacher.id, teacher.profiles?.full_name)
+    showMsg(`✅ Registration ${silent ? 'declined silently' : 'declined'}.`); fetchAll()
+  }
   const pendingFlags = flags.filter(f => f.status === 'pending').length
   const pendingApplications = teachers.filter(t => t.application_status === 'pending').length
   const pendingPhotos = allUsers.filter(u => u.pending_avatar_url).length
   const pendingPayouts = bookings.filter(b => b.payment_status === 'paid' && b.payout_status === 'pending' && b.status !== 'cancelled').length
   const pendingRefunds = bookings.filter(b => b.refund_status === 'pending').length
+
+  const regId = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('reg') : null
+  if (regId) return (<RegistrationView teacherId={regId} teachers={teachers} documents={documents} certificates={certificates} onReviewDoc={reviewDoc} onReviewCert={reviewCert} onApprovePhoto={approvePhoto} onDeclinePhoto={declinePhotoReg} onApprove={approveApplication} onDecline={declineRegistration} />)
 
   return (
     <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'Tahoma, Geneva, sans-serif', color: '#111', display: 'flex', flexDirection: 'column' }}>
@@ -1115,6 +1145,7 @@ export default function Dashboard() {
             <>
               {tab === 'overview' && <OverviewTab stats={stats} bookings={bookings} teachers={teachers} pendingApplications={pendingApplications} pendingPayouts={pendingPayouts} pendingRefunds={pendingRefunds} pendingCerts={stats.pendingCerts} pendingDocs={stats.pendingDocs} pendingPhotos={pendingPhotos} pendingFlags={pendingFlags} setTab={setTab} />}
               {tab === 'applications' && <ApplicationsTab teachers={teachers} allUsers={allUsers} onApprove={approveApplication} onReject={rejectApplication} />}
+              {tab === 'registrations' && <RegistrationsTab teachers={teachers} allUsers={allUsers} />}
               {tab === 'certificates' && <CertificatesTab certificates={certificates} onUpdate={updateCert} onRefresh={fetchAll} setMessage={showMsg} log={log} teachers={teachers} />}
               {tab === 'documents' && <DocumentsTab documents={documents} onUpdate={updateDoc} onRefresh={fetchAll} setMessage={showMsg} log={log} teachers={teachers} />}
               {tab === 'photos' && <PhotoReviewsTab users={allUsers} onApprove={approvePhoto} onReject={rejectPhoto} />}
@@ -3054,3 +3085,170 @@ function PayoutInfo({ teacher }) {
     </DrawerSection>
   )
 }
+
+
+const TEACHER_COHORTS = [
+  ['step_1', 'Step 1'], ['step_2', 'Step 2'], ['step_3', 'Step 3'], ['step_4', 'Step 4'],
+  ['submitted', 'Submitted'], ['resubmission_needed', 'Resubmission needed'], ['resubmitted', 'Resubmitted'],
+  ['approved', 'Approved'], ['declined', 'Declined'], ['declined_silent', 'Declined silently'],
+]
+
+function stageOfTeacher(t) {
+  return t.application_stage || (t.application_status === 'approved' ? 'approved' : t.application_status === 'rejected' ? 'declined' : t.application_status === 'pending' ? 'submitted' : 'step_1')
+}
+
+function RegStageBadge({ stage }) {
+  const map = {
+    step_1: ['Step 1', '#E0E7FF', '#3730A3'], step_2: ['Step 2', '#E0E7FF', '#3730A3'], step_3: ['Step 3', '#E0E7FF', '#3730A3'], step_4: ['Step 4', '#E0E7FF', '#3730A3'],
+    submitted: ['Submitted', '#FEF9C3', '#854D0E'], resubmission_needed: ['Resubmission needed', '#FFEDD5', '#9A3412'], resubmitted: ['Resubmitted', '#DBEAFE', '#1E40AF'],
+    approved: ['Approved', '#DCFCE7', '#166534'], declined: ['Declined', '#FEE2E2', '#991B1B'], declined_silent: ['Declined silently', '#F1F5F9', '#475569'],
+  }
+  const [label, bg, color] = map[stage] || ['—', '#F1F5F9', '#475569']
+  return <span style={{ fontSize: '12px', fontWeight: '700', padding: '3px 12px', borderRadius: '20px', background: bg, color }}>{label}</span>
+}
+
+function RegCard({ title, children }) {
+  return (
+    <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '1.25rem 1.5rem', marginBottom: '1.25rem' }}>
+      <h3 style={{ fontSize: '13px', fontWeight: '800', color: '#111', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</h3>
+      {children}
+    </div>
+  )
+}
+
+function RegItemRow({ title, subtitle, fileUrl, isCert, status, onApprove, onDecline }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 0', borderBottom: '1px solid #F1F5F9', flexWrap: 'wrap' }}>
+      <div style={{ flex: 1, minWidth: '160px' }}>
+        <div style={{ fontSize: '14px', fontWeight: '600', color: '#111' }}>{title}</div>
+        {subtitle && <div style={{ fontSize: '12px', color: '#64748B' }}>{subtitle}</div>}
+      </div>
+      {status && <span style={{ fontSize: '11px', fontWeight: '700', padding: '2px 10px', borderRadius: '20px', background: status === 'approved' ? '#DCFCE7' : status === 'rejected' ? '#FEE2E2' : '#FEF9C3', color: status === 'approved' ? '#166534' : status === 'rejected' ? '#991B1B' : '#854D0E' }}>{status}</span>}
+      {fileUrl && (isCert ? <ViewFileBtn url={fileUrl} name={title} label="View ↗" /> : <DocViewBtn fileUrl={fileUrl} name={title} label="View ↗" />)}
+      <button onClick={onApprove} style={btnGreen}>Approve</button>
+      <button onClick={onDecline} style={btnRed}>Decline</button>
+    </div>
+  )
+}
+
+function RegistrationView({ teacherId, teachers, documents, certificates, onReviewDoc, onReviewCert, onApprovePhoto, onDeclinePhoto, onApprove, onDecline }) {
+  const teacher = teachers.find(t => t.id === teacherId)
+  const back = () => { window.location.href = '/dashboard' }
+  if (!teacher) return (
+    <div style={{ padding: '3rem', textAlign: 'center', fontFamily: 'Tahoma, Geneva, sans-serif', color: '#64748B' }}>
+      Loading registration…
+      <div><button onClick={back} style={{ ...btnGhost, marginTop: '1rem' }}>Close</button></div>
+    </div>
+  )
+  const pr = teacher.profiles || {}
+  const docs = documents.filter(d => d.teacher_id === teacherId)
+  const certs = certificates.filter(c => c.teacher_id === teacherId)
+  return (
+    <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'Tahoma, Geneva, sans-serif', color: '#111' }}>
+      <nav style={{ background: '#6D28D9', padding: '0.875rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ fontFamily: "'Roboto Serif', Georgia, serif", fontSize: '20px', fontWeight: '700', color: '#fff' }}>Stuumo</div>
+          <span style={{ fontSize: '11px', background: '#fff', color: '#6D28D9', padding: '2px 10px', borderRadius: '20px', fontWeight: '700' }}>REGISTRATION</span>
+        </div>
+        <button onClick={back} style={{ padding: '7px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.35)', color: '#fff', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}>Close</button>
+      </nav>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem' }}>
+        <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '1.25rem' }}>
+          <AdminAvatar name={pr.full_name} url={pr.avatar_url} size={56} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '20px', fontWeight: '700' }}>{pr.full_name}</div>
+            <div style={{ fontSize: '13px', color: '#64748B' }}>{pr.email}{pr.city ? ' · ' + pr.city : ''}{pr.country ? ', ' + pr.country : ''}</div>
+          </div>
+          <RegStageBadge stage={stageOfTeacher(teacher)} />
+        </div>
+
+        <RegCard title="About & experience">
+          <InfoRow label="Bio" value={teacher.bio} />
+          <InfoRow label="Experience" value={teacher.years_experience ? teacher.years_experience + ' yrs' : null} />
+          <InfoRow label="Rate" value={teacher.hourly_rate ? 'GH₵ ' + teacher.hourly_rate + '/hr' : null} />
+          <InfoRow label="Languages" value={(teacher.languages || []).join(', ')} />
+          <InfoRow label="Subjects" value={(teacher.subjects || []).join(', ')} />
+          <InfoRow label="Levels" value={(teacher.teaching_levels || []).join(', ')} />
+        </RegCard>
+
+        <PayoutInfo teacher={teacher} />
+
+        <RegCard title="Profile photo">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+            <AdminAvatar name={pr.full_name} url={pr.avatar_url} size={64} />
+            {pr.avatar_url && <button onClick={() => window.open(pr.avatar_url, '_blank', 'noopener')} style={btnGhost}>View ↗</button>}
+            <button onClick={() => onDeclinePhoto(teacher.id, pr.full_name)} style={btnRed}>Decline photo</button>
+          </div>
+        </RegCard>
+
+        <RegCard title={`Documents (${docs.length})`}>
+          {docs.length === 0 ? <div style={{ fontSize: '13px', color: '#94A3B8' }}>No documents uploaded.</div> : docs.map(d => (
+            <RegItemRow key={d.id} title={d.document_type} subtitle={d.expiry_date ? 'Expires ' + d.expiry_date : null} status={d.status} fileUrl={d.file_url} isCert={false}
+              onApprove={() => onReviewDoc(d.id, 'approved', teacher.id)} onDecline={() => onReviewDoc(d.id, 'rejected', teacher.id)} />
+          ))}
+        </RegCard>
+
+        <RegCard title={`Certificates (${certs.length})`}>
+          {certs.length === 0 ? <div style={{ fontSize: '13px', color: '#94A3B8' }}>No certificates uploaded.</div> : certs.map(c => (
+            <RegItemRow key={c.id} title={c.certificate_name} subtitle={c.certificate_type} status={c.status} fileUrl={c.file_url} isCert={true}
+              onApprove={() => onReviewCert(c.id, 'approved', teacher.id)} onDecline={() => onReviewCert(c.id, 'rejected', teacher.id)} />
+          ))}
+        </RegCard>
+
+        <div style={{ display: 'flex', gap: '10px', marginTop: '1.5rem', flexWrap: 'wrap' }}>
+          <button onClick={() => { if (window.confirm('Approve this registration?')) onApprove(teacher.id, pr.full_name, teacher.id, pr.email) }} style={{ padding: '12px 24px', background: '#166534', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>✓ Approve registration</button>
+          <button onClick={() => { if (window.confirm('Decline and email the teacher the general message?')) onDecline(teacher, false) }} style={{ padding: '12px 24px', background: '#DC2626', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>Decline (email sent)</button>
+          <button onClick={() => { if (window.confirm('Decline silently? No notification will be sent to the teacher.')) onDecline(teacher, true) }} style={{ padding: '12px 24px', background: '#fff', color: '#991B1B', border: '1px solid #FECACA', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>Decline silently</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function RegistrationsTab({ teachers, allUsers }) {
+  const [role, setRole] = useState('teacher')
+  const [stage, setStage] = useState('all')
+  const openReg = (id) => window.open('/dashboard?reg=' + id, '_blank', 'noopener')
+  const counts = {}
+  teachers.forEach(t => { const st = stageOfTeacher(t); counts[st] = (counts[st] || 0) + 1 })
+  const list = role === 'teacher'
+    ? teachers.filter(t => stage === 'all' || stageOfTeacher(t) === stage)
+    : allUsers.filter(u => u.role === role)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '8px', border: '1px solid #E2E8F0', width: 'fit-content' }}>
+        {[['teacher', 'Teachers'], ['learner', 'Learners'], ['parent', 'Parents']].map(([k, l]) => (
+          <button key={k} onClick={() => { setRole(k); setStage('all') }} style={{ padding: '7px 18px', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', background: role === k ? '#6D28D9' : 'transparent', color: role === k ? '#fff' : '#64748B', fontWeight: role === k ? '700' : '400' }}>{l}</button>
+        ))}
+      </div>
+      {role === 'teacher' && (
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {[['all', 'All'], ...TEACHER_COHORTS].map(([k, l]) => {
+            const n = k === 'all' ? teachers.length : (counts[k] || 0)
+            return <button key={k} onClick={() => setStage(k)} style={{ padding: '6px 12px', borderRadius: '20px', border: stage === k ? '1.5px solid #6D28D9' : '1px solid #E2E8F0', background: stage === k ? '#EDE9FE' : '#fff', color: stage === k ? '#5B21B6' : '#64748B', fontSize: '12px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>{l} ({n})</button>
+          })}
+        </div>
+      )}
+      <div style={{ fontSize: '13px', color: '#64748B' }}>{list.length} {role}{list.length !== 1 ? 's' : ''}</div>
+      {list.length === 0 ? <Empty text="None in this group." /> : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {list.map(item => {
+            const prof = role === 'teacher' ? (item.profiles || {}) : item
+            return (
+              <div key={item.id} style={{ background: '#fff', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <AdminAvatar name={prof.full_name} url={prof.avatar_url} size={40} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '14px', fontWeight: '700' }}>{prof.full_name || '(no name)'}</div>
+                  <div style={{ fontSize: '12px', color: '#64748B' }}>{prof.email}{prof.city ? ' · ' + prof.city : ''}</div>
+                </div>
+                {role === 'teacher' && <RegStageBadge stage={stageOfTeacher(item)} />}
+                {role === 'teacher' && <button onClick={() => openReg(item.id)} style={{ padding: '7px 16px', background: '#F5F3FF', color: '#6D28D9', border: '1px solid #DDD6FE', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '700' }}>View ↗</button>}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
