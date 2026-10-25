@@ -413,6 +413,8 @@ function ApplicationDetail({ teacher, onApprove, onReject }) {
         </DrawerSection>
       )}
 
+      <PayoutInfo teacher={teacher} />
+
       <DrawerSection title={`ID & Documents (${docs.length}) — upload on behalf`}>
         <div style={{ background: '#F8FAFC', borderRadius: '10px', padding: '14px', border: '1px solid #E2E8F0', marginBottom: '12px' }}>
           <div style={{ fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Upload document for this teacher</div>
@@ -618,6 +620,8 @@ function TeacherDetail({ teacher, allReviews, allBookings, onVerify, onSuspend, 
           </div>
         ))}
       </div>
+
+      <PayoutInfo teacher={teacher} />
 
       <DrawerSection title="Profile">
         <InfoRow label="Email" value={teacher.profiles?.email} />
@@ -2873,6 +2877,32 @@ function TestimonialsTab({ testimonials, onRefresh }) {
         </div>
       )}
     </div>
+  )
+}
+
+
+function PayoutInfo({ teacher }) {
+  const m = teacher.payout_method
+  return (
+    <DrawerSection title="💳 Payout details">
+      {!m ? (
+        <div style={{ fontSize: '13px', color: '#94A3B8' }}>No payout details on file yet.</div>
+      ) : m === 'bank' ? (
+        <>
+          <InfoRow label="Method" value="Bank account" />
+          <InfoRow label="Bank" value={teacher.bank_name} />
+          <InfoRow label="Account name" value={teacher.account_name} />
+          <InfoRow label="Account number" value={teacher.account_number} />
+        </>
+      ) : (
+        <>
+          <InfoRow label="Method" value="Mobile money" />
+          <InfoRow label="Network" value={teacher.momo_network} />
+          <InfoRow label="MoMo name" value={teacher.momo_name} />
+          <InfoRow label="MoMo number" value={teacher.momo_number} />
+        </>
+      )}
+    </DrawerSection>
   )
 }
 
