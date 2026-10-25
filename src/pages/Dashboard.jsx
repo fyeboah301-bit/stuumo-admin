@@ -3261,7 +3261,7 @@ function RegistrationView({ teacherId, teachers, documents, certificates, onRevi
 
         <RegCard title={`Documents (${docs.length})`}>
           {docs.length === 0 ? <div style={{ fontSize: '13px', color: '#94A3B8' }}>No documents uploaded.</div> : docs.map(d => (
-            <RegItemRow key={d.id} title={d.document_type} subtitle={d.expiry_date ? 'Expires ' + d.expiry_date : null} status={d.status} fileUrl={d.file_url} isCert={false}
+            <RegItemRow key={d.id} title={d.document_type} subtitle={[d.document_number ? 'No. ' + d.document_number : null, d.expiry_date ? 'Expires ' + d.expiry_date : null].filter(Boolean).join(' · ') || null} status={d.status} fileUrl={d.file_url} isCert={false}
               onApprove={() => onReviewDoc(d.id, 'approved', t.id)} onDecline={() => onReviewDoc(d.id, 'rejected', t.id)} />
           ))}
         </RegCard>
@@ -3287,24 +3287,42 @@ function RegistrationsTab({ teachers, allUsers }) {
   const [role, setRole] = useState('teacher')
   const [stage, setStage] = useState('all')
   const [period, setPeriod] = useState('all')
+  const [search, setSearch] = useState('')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
   const openReg = (id) => window.open('/dashboard?reg=' + id, '_blank', 'noopener')
   const dateOf = (item) => role === 'teacher' ? item.profiles?.created_at : item.created_at
   const inPeriod = (item) => {
+    const d = dateOf(item)
+    if (customFrom || customTo) {
+      if (!d) return false
+      const dt = new Date(d).getTime()
+      if (customFrom && dt < new Date(customFrom).getTime()) return false
+      if (customTo && dt > new Date(customTo + 'T23:59:59').getTime()) return false
+      return true
+    }
     if (period === 'all') return true
-    const d = dateOf(item); if (!d) return false
-    const days = Number(period)
-    return (Date.now() - new Date(d).getTime()) <= days * 24 * 60 * 60 * 1000
+    if (!d) return false
+    return (Date.now() - new Date(d).getTime()) <= Number(period) * 24 * 60 * 60 * 1000
+  }
+  const q = search.trim().toLowerCase()
+  const matchSearch = (item) => {
+    if (!q) return true
+    const prof = role === 'teacher' ? (item.profiles || {}) : item
+    const fields = [prof.full_name, prof.email, prof.phone]
+    if (role === 'teacher') fields.push(item.ghana_card_number)
+    return fields.some(f => (f || '').toString().toLowerCase().includes(q))
   }
   const counts = {}
-  teachers.filter(inPeriod).forEach(t => { const st = stageOfTeacher(t); counts[st] = (counts[st] || 0) + 1 })
+  teachers.filter(inPeriod).filter(matchSearch).forEach(t => { const st = stageOfTeacher(t); counts[st] = (counts[st] || 0) + 1 })
   const list = (role === 'teacher'
     ? teachers.filter(t => stage === 'all' || stageOfTeacher(t) === stage)
-    : allUsers.filter(u => u.role === role)).filter(inPeriod)
+    : allUsers.filter(u => u.role === role)).filter(inPeriod).filter(matchSearch)
   const exportCurrent = () => {
     const rows = list.map(item => {
       const prof = role === 'teacher' ? (item.profiles || {}) : item
       const base = { name: prof.full_name || '', email: prof.email || '', phone: prof.phone || '', city: prof.city || '', country: prof.country || '', signed_up: dateOf(item) ? new Date(dateOf(item)).toLocaleDateString() : '' }
-      if (role === 'teacher') return { ...base, stage: stageOfTeacher(item), rate: item.hourly_rate || '', verified: item.is_verified ? 'yes' : 'no' }
+      if (role === 'teacher') return { ...base, stage: stageOfTeacher(item), rate: item.hourly_rate || '', ghana_card: item.ghana_card_number || '', verified: item.is_verified ? 'yes' : 'no' }
       return { role, ...base }
     })
     const label = role === 'teacher' ? (stage === 'all' ? 'all' : stage) : role
@@ -3312,6 +3330,7 @@ function RegistrationsTab({ teachers, allUsers }) {
   }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, email, phone, Ghana Card number…" style={{ width: '100%', padding: '10px 14px', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '14px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
       <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '8px', border: '1px solid #E2E8F0', width: 'fit-content' }}>
         {[['teacher', 'Teachers'], ['learner', 'Learners'], ['parent', 'Parents']].map(([k, l]) => (
           <button key={k} onClick={() => { setRole(k); setStage('all') }} style={{ padding: '7px 18px', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', background: role === k ? '#6D28D9' : 'transparent', color: role === k ? '#fff' : '#64748B', fontWeight: role === k ? '700' : '400' }}>{l}</button>
@@ -3320,15 +3339,22 @@ function RegistrationsTab({ teachers, allUsers }) {
       <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: '4px', background: '#fff', padding: '4px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
           {[['all', 'All time'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['90', 'Last 90 days']].map(([k, l]) => (
-            <button key={k} onClick={() => setPeriod(k)} style={{ padding: '6px 12px', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', background: period === k ? '#EDE9FE' : 'transparent', color: period === k ? '#5B21B6' : '#64748B', fontWeight: period === k ? '700' : '500' }}>{l}</button>
+            <button key={k} onClick={() => { setPeriod(k); setCustomFrom(''); setCustomTo('') }} style={{ padding: '6px 12px', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', background: (period === k && !customFrom && !customTo) ? '#EDE9FE' : 'transparent', color: (period === k && !customFrom && !customTo) ? '#5B21B6' : '#64748B', fontWeight: period === k ? '700' : '500' }}>{l}</button>
           ))}
+        </div>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '12px', color: '#64748B' }}>
+          <span>From</span>
+          <input type="date" value={customFrom} onChange={e => { setCustomFrom(e.target.value); setPeriod('all') }} style={{ padding: '6px 8px', border: '1px solid #E2E8F0', borderRadius: '6px', fontSize: '12px', fontFamily: 'inherit' }} />
+          <span>To</span>
+          <input type="date" value={customTo} onChange={e => { setCustomTo(e.target.value); setPeriod('all') }} style={{ padding: '6px 8px', border: '1px solid #E2E8F0', borderRadius: '6px', fontSize: '12px', fontFamily: 'inherit' }} />
+          {(customFrom || customTo) && <button onClick={() => { setCustomFrom(''); setCustomTo('') }} style={{ background: 'none', border: 'none', color: '#6D28D9', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }}>Clear</button>}
         </div>
         <button onClick={exportCurrent} style={{ padding: '7px 14px', background: '#F1F5F9', color: '#374151', border: '1px solid #E2E8F0', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: '700', fontFamily: 'inherit' }}>⬇ Download CSV</button>
       </div>
       {role === 'teacher' && (
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           {[['all', 'All'], ...TEACHER_COHORTS].map(([k, l]) => {
-            const n = k === 'all' ? teachers.filter(inPeriod).length : (counts[k] || 0)
+            const n = k === 'all' ? teachers.filter(inPeriod).filter(matchSearch).length : (counts[k] || 0)
             return <button key={k} onClick={() => setStage(k)} style={{ padding: '6px 12px', borderRadius: '20px', border: stage === k ? '1.5px solid #6D28D9' : '1px solid #E2E8F0', background: stage === k ? '#EDE9FE' : '#fff', color: stage === k ? '#5B21B6' : '#64748B', fontSize: '12px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>{l} ({n})</button>
           })}
         </div>
