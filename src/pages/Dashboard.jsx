@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAdmin } from '../context/AdminContext'
 import { supabase } from '../lib/supabase'
+import { BANKS_BY_COUNTRY, MOMO_BY_COUNTRY } from '../data/payout'
 
 const sendEmail = async (payload) => {
   try { await supabase.functions.invoke('send-booking-email', { body: payload }) }
@@ -2882,27 +2883,131 @@ function TestimonialsTab({ testimonials, onRefresh }) {
 
 
 function PayoutInfo({ teacher }) {
-  const m = teacher.payout_method
+  const country = teacher.profiles?.country
+  const banks = BANKS_BY_COUNTRY[country]
+  const nets = MOMO_BY_COUNTRY[country]
+  const snap = () => ({
+    payout_method: teacher.payout_method || 'bank',
+    bank_name: teacher.bank_name || '', account_name: teacher.account_name || '', account_number: teacher.account_number || '',
+    momo_network: teacher.momo_network || '', momo_name: teacher.momo_name || '', momo_number: teacher.momo_number || '',
+  })
+  const [row, setRow] = useState(snap())
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [f, setF] = useState(snap())
+  const [bankOther, setBankOther] = useState(false)
+  const [netOther, setNetOther] = useState(false)
+  const set = (k, v) => setF(prev => ({ ...prev, [k]: v }))
+  const start = () => {
+    setF(row)
+    setBankOther(Boolean(row.bank_name) && banks && !banks.includes(row.bank_name))
+    setNetOther(Boolean(row.momo_network) && nets && !nets.includes(row.momo_network))
+    setEditing(true)
+  }
+  const valid = f.payout_method === 'bank'
+    ? Boolean(f.bank_name.trim() && f.account_name.trim() && f.account_number.trim())
+    : Boolean(f.momo_network.trim() && f.momo_name.trim() && f.momo_number.trim())
+  const save = async () => {
+    if (!valid) return
+    setSaving(true)
+    const payload = {
+      payout_method: f.payout_method,
+      bank_name: f.payout_method === 'bank' ? f.bank_name.trim() : null,
+      account_name: f.payout_method === 'bank' ? f.account_name.trim() : null,
+      account_number: f.payout_method === 'bank' ? f.account_number.trim() : null,
+      momo_network: f.payout_method === 'momo' ? f.momo_network.trim() : null,
+      momo_name: f.payout_method === 'momo' ? f.momo_name.trim() : null,
+      momo_number: f.payout_method === 'momo' ? f.momo_number.trim() : null,
+    }
+    try {
+      const { error } = await supabase.from('teachers').update(payload).eq('id', teacher.id)
+      if (error) throw error
+      await supabase.from('audit_logs').insert({ action: 'Payout details edited by admin', target_type: 'teacher', target_id: teacher.id, details: payload.payout_method })
+      setRow({
+        payout_method: payload.payout_method,
+        bank_name: payload.bank_name || '', account_name: payload.account_name || '', account_number: payload.account_number || '',
+        momo_network: payload.momo_network || '', momo_name: payload.momo_name || '', momo_number: payload.momo_number || '',
+      })
+      setEditing(false)
+    } catch (err) { alert('Error saving payout details: ' + err.message) }
+    finally { setSaving(false) }
+  }
+
+  const m = row.payout_method
+  const empty = !row.payout_method || (m === 'bank' && !row.bank_name) || (m === 'momo' && !row.momo_network)
   return (
     <DrawerSection title="💳 Payout details">
-      {!m ? (
-        <div style={{ fontSize: '13px', color: '#94A3B8' }}>No payout details on file yet.</div>
-      ) : m === 'bank' ? (
+      {!editing ? (
         <>
-          <InfoRow label="Method" value="Bank account" />
-          <InfoRow label="Bank" value={teacher.bank_name} />
-          <InfoRow label="Account name" value={teacher.account_name} />
-          <InfoRow label="Account number" value={teacher.account_number} />
+          {empty ? (
+            <div style={{ fontSize: '13px', color: '#94A3B8', marginBottom: '8px' }}>No payout details on file yet.</div>
+          ) : m === 'bank' ? (
+            <>
+              <InfoRow label="Method" value="Bank account" />
+              <InfoRow label="Bank" value={row.bank_name} />
+              <InfoRow label="Account name" value={row.account_name} />
+              <InfoRow label="Account number" value={row.account_number} />
+            </>
+          ) : (
+            <>
+              <InfoRow label="Method" value="Mobile money" />
+              <InfoRow label="Network" value={row.momo_network} />
+              <InfoRow label="MoMo name" value={row.momo_name} />
+              <InfoRow label="MoMo number" value={row.momo_number} />
+            </>
+          )}
+          <button onClick={start} style={{ ...btnGhost, marginTop: '8px' }}>✏️ {empty ? 'Add' : 'Edit'} payout details</button>
         </>
       ) : (
-        <>
-          <InfoRow label="Method" value="Mobile money" />
-          <InfoRow label="Network" value={teacher.momo_network} />
-          <InfoRow label="MoMo name" value={teacher.momo_name} />
-          <InfoRow label="MoMo number" value={teacher.momo_number} />
-        </>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {[['bank', '🏦 Bank'], ['momo', '📱 Mobile money']].map(([val, label]) => (
+              <button key={val} onClick={() => set('payout_method', val)} style={{ flex: 1, padding: '9px', borderRadius: '8px', border: f.payout_method === val ? '1.5px solid #6D28D9' : '1px solid #E2E8F0', background: f.payout_method === val ? '#EDE9FE' : '#fff', color: f.payout_method === val ? '#5B21B6' : '#64748B', fontWeight: '700', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>{label}</button>
+            ))}
+          </div>
+          {f.payout_method === 'bank' ? (
+            <>
+              <div>
+                <label style={formLbl}>Bank name</label>
+                {banks ? (
+                  <>
+                    <select style={{ ...formInp, cursor: 'pointer' }} value={bankOther ? '__other__' : f.bank_name} onChange={e => { const v = e.target.value; if (v === '__other__') { setBankOther(true); set('bank_name', '') } else { setBankOther(false); set('bank_name', v) } }}>
+                      <option value="">Select bank</option>
+                      {banks.map(b => <option key={b} value={b}>{b}</option>)}
+                      <option value="__other__">Other (type below)</option>
+                    </select>
+                    {bankOther && <input style={{ ...formInp, marginTop: '6px' }} placeholder="Bank name" value={f.bank_name} onChange={e => set('bank_name', e.target.value)} />}
+                  </>
+                ) : <input style={formInp} placeholder="Bank name" value={f.bank_name} onChange={e => set('bank_name', e.target.value)} />}
+              </div>
+              <div><label style={formLbl}>Account name</label><input style={formInp} value={f.account_name} onChange={e => set('account_name', e.target.value)} /></div>
+              <div><label style={formLbl}>Account number</label><input style={formInp} value={f.account_number} onChange={e => set('account_number', e.target.value)} /></div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label style={formLbl}>Network</label>
+                {nets ? (
+                  <>
+                    <select style={{ ...formInp, cursor: 'pointer' }} value={netOther ? '__other__' : f.momo_network} onChange={e => { const v = e.target.value; if (v === '__other__') { setNetOther(true); set('momo_network', '') } else { setNetOther(false); set('momo_network', v) } }}>
+                      <option value="">Select network</option>
+                      {nets.map(nw => <option key={nw} value={nw}>{nw}</option>)}
+                      <option value="__other__">Other (type below)</option>
+                    </select>
+                    {netOther && <input style={{ ...formInp, marginTop: '6px' }} placeholder="Network" value={f.momo_network} onChange={e => set('momo_network', e.target.value)} />}
+                  </>
+                ) : <input style={formInp} placeholder="Network" value={f.momo_network} onChange={e => set('momo_network', e.target.value)} />}
+              </div>
+              <div><label style={formLbl}>MoMo name</label><input style={formInp} value={f.momo_name} onChange={e => set('momo_name', e.target.value)} /></div>
+              <div><label style={formLbl}>MoMo number</label><input style={formInp} value={f.momo_number} onChange={e => set('momo_number', e.target.value)} /></div>
+            </>
+          )}
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={save} disabled={saving || !valid} style={{ ...btnGreen, padding: '9px 16px', opacity: (!valid || saving) ? 0.5 : 1 }}>{saving ? 'Saving...' : '✓ Save payout details'}</button>
+            <button onClick={() => setEditing(false)} style={{ ...btnGhost, padding: '9px 16px' }}>Cancel</button>
+          </div>
+        </div>
       )}
     </DrawerSection>
   )
 }
-
