@@ -1384,17 +1384,16 @@ function CertificatesTab({ certificates, onUpdate, onRefresh, setMessage, log, t
       <div style={{ fontSize: '13px', color: '#64748B' }}>{filtered.length} certificate{filtered.length !== 1 ? 's' : ''} — click to open and review</div>
 
       {filtered.length === 0 ? <Empty text="No certificates match filters." /> : filtered.map(cert => {
-        const isExpanded = expandedId === cert.id
+        const isExpanded = true
         return (
-          <div key={cert.id} style={{ background: '#fff', borderRadius: '12px', border: `1px solid ${selected.has(cert.id) ? '#C4B5FD' : isExpanded ? '#6D28D9' : '#E2E8F0'}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 1.5rem', flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => setExpandedId(isExpanded ? null : cert.id)}>
+          <div key={cert.id} style={{ background: '#fff', borderRadius: '12px', border: `1px solid ${selected.has(cert.id) ? '#C4B5FD' : '#E2E8F0'}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 1.5rem', flexWrap: 'wrap' }}>
               {cert.status === 'pending' && <input type="checkbox" checked={selected.has(cert.id)} onChange={e => { e.stopPropagation(); toggle(cert.id) }} onClick={e => e.stopPropagation()} style={{ width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0 }} />}
               <div style={{ flex: 1, minWidth: '200px' }}>
                 <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '4px', color: '#111' }}>{cert.certificate_name}</div>
                 <div style={{ fontSize: '13px', color: '#64748B' }}>👩‍🏫 {cert.teachers?.profiles?.full_name} · {cert.certificate_type === 'academic' ? '🎓 Academic' : '📋 Teaching'} · {new Date(cert.uploaded_at).toLocaleDateString()}</div>
               </div>
               <StatusBadge status={cert.status} />
-              <span style={{ fontSize: '13px', color: '#6D28D9', fontWeight: '700' }}>{isExpanded ? '▲ Close' : '▼ Open to review'}</span>
             </div>
             {isExpanded && (
               <div style={{ borderTop: '1px solid #E2E8F0', padding: '1.25rem 1.5rem', background: '#F8FAFC' }}>
@@ -1567,16 +1566,15 @@ function DocumentsTab({ documents, onUpdate, onRefresh, setMessage, log, teacher
       <div style={{ fontSize: '13px', color: '#64748B' }}>{filtered.length} document{filtered.length !== 1 ? 's' : ''} — click to open and review</div>
 
       {filtered.length === 0 ? <Empty text="No documents match filters." /> : filtered.map(doc => {
-        const isExpanded = expandedId === doc.id
+        const isExpanded = true
         return (
-          <div key={doc.id} style={{ background: '#fff', borderRadius: '12px', border: `1px solid ${isExpanded ? '#6D28D9' : '#E2E8F0'}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 1.5rem', flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => setExpandedId(isExpanded ? null : doc.id)}>
+          <div key={doc.id} style={{ background: '#fff', borderRadius: '12px', border: `1px solid #E2E8F0`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 1.5rem', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: '200px' }}>
                 <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '4px', color: '#111' }}>{doc.document_type}</div>
                 <div style={{ fontSize: '13px', color: '#64748B' }}>👩‍🏫 {doc.profiles?.full_name} · {new Date(doc.uploaded_at).toLocaleDateString()}</div>
               </div>
               <StatusBadge status={doc.status} />
-              <span style={{ fontSize: '13px', color: '#6D28D9', fontWeight: '700' }}>{isExpanded ? '▲ Close' : '▼ Open to review'}</span>
             </div>
             {isExpanded && (
               <div style={{ borderTop: '1px solid #E2E8F0', padding: '1.25rem 1.5rem', background: '#F8FAFC' }}>
