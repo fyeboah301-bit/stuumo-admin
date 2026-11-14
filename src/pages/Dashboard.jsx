@@ -205,7 +205,6 @@ function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, 
   const groups = [
     { label: null, items: [{ key: 'overview', icon: '📊', label: 'Overview' }] },
     { label: 'People', items: [
-      { key: 'applications', icon: '🚀', label: 'Applications', badge: pendingApplications || null },
       { key: 'registrations', icon: '🗂️', label: 'Registrations' },
       { key: 'certificates', icon: '📋', label: 'Certificates', badge: pendingCerts || null },
       { key: 'documents', icon: '🪪', label: 'Documents', badge: pendingDocs || null },
@@ -222,7 +221,6 @@ function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, 
     ]},
     { label: 'Finance', items: [
       { key: 'payments', icon: '💳', label: 'Payments' },
-      { key: 'payouts', icon: '💰', label: 'Payouts', badge: pendingPayouts || null },
       { key: 'refunds', icon: '↩️', label: 'Refunds', badge: pendingRefunds || null, badgeRed: true },
       { key: 'referrals', icon: '🎁', label: 'Referrals' },
     ]},
