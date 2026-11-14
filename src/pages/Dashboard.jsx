@@ -205,6 +205,7 @@ function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, 
   const groups = [
     { label: null, items: [{ key: 'overview', icon: '📊', label: 'Overview' }] },
     { label: 'People', items: [
+      { key: 'applications', icon: '🚀', label: 'Applications', badge: pendingApplications || null },
       { key: 'registrations', icon: '🗂️', label: 'Registrations' },
       { key: 'certificates', icon: '📋', label: 'Certificates', badge: pendingCerts || null },
       { key: 'documents', icon: '🪪', label: 'Documents', badge: pendingDocs || null },
@@ -221,6 +222,7 @@ function Sidebar({ tab, setTab, pendingApplications, pendingCerts, pendingDocs, 
     ]},
     { label: 'Finance', items: [
       { key: 'payments', icon: '💳', label: 'Payments' },
+      { key: 'payouts', icon: '💰', label: 'Payouts', badge: pendingPayouts || null },
       { key: 'refunds', icon: '↩️', label: 'Refunds', badge: pendingRefunds || null, badgeRed: true },
       { key: 'referrals', icon: '🎁', label: 'Referrals' },
     ]},
@@ -1122,7 +1124,7 @@ export default function Dashboard() {
         </div>
         {!isNarrow && (
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {[[pendingApplications, 'applications', '🚀'], [pendingPayouts, 'payouts', '💰'], [pendingRefunds, 'refunds', '↩️']].filter(([n]) => n > 0).map(([n, key, icon]) => (
+            {[[pendingRefunds, 'refunds', '↩️']].filter(([n]) => n > 0).map(([n, key, icon]) => (
               <button key={key} onClick={() => setTab(key)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 11px', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.22)', borderRadius: '20px', color: '#fff', fontSize: '12px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>
                 <span>{icon}</span><span>{n}</span><span style={{ opacity: 0.85, fontWeight: '500', textTransform: 'capitalize' }}>{key}</span>
               </button>
