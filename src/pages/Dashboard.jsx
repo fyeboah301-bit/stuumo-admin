@@ -1381,7 +1381,7 @@ function CertificatesTab({ certificates, onUpdate, onRefresh, setMessage, log, t
         </div>
       )}
 
-      <div style={{ fontSize: '13px', color: '#64748B' }}>{filtered.length} certificate{filtered.length !== 1 ? 's' : ''} — click to open and review</div>
+      <div style={{ fontSize: '13px', color: '#64748B' }}>{filtered.length} certificate{filtered.length !== 1 ? 's' : ''} to review</div>
 
       {filtered.length === 0 ? <Empty text="No certificates match filters." /> : filtered.map(cert => {
         const isExpanded = true
@@ -1397,8 +1397,8 @@ function CertificatesTab({ certificates, onUpdate, onRefresh, setMessage, log, t
             </div>
             {isExpanded && (
               <div style={{ borderTop: '1px solid #E2E8F0', padding: '1.25rem 1.5rem', background: '#F8FAFC' }}>
-                <div style={{ marginBottom: '1rem' }}><ViewFileBtn url={cert.file_url} name={cert.certificate_name} label="📄 View certificate" /></div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <ViewFileBtn url={cert.file_url} name={cert.certificate_name} label="📄 View certificate" />
                   {cert.status !== 'approved' && <button onClick={() => { onUpdate(cert.id, 'approved'); setExpandedId(null) }} style={btnGreen}>✓ Approve</button>}
                   {cert.status !== 'declined' && <button onClick={() => { onUpdate(cert.id, 'declined'); setExpandedId(null) }} style={btnRed}>✗ Decline</button>}
                   {cert.status !== 'pending' && <button onClick={() => { onUpdate(cert.id, 'pending'); setExpandedId(null) }} style={btnYellow}>Reset to pending</button>}
@@ -1563,7 +1563,7 @@ function DocumentsTab({ documents, onUpdate, onRefresh, setMessage, log, teacher
         { key: 'dateTo', label: 'To', type: 'date', value: f.dateTo },
       ]} onChange={(key, val) => setF(prev => ({ ...prev, [key]: val }))} onClear={() => setF({ status: 'all', type: 'all', dateFrom: '', dateTo: '', search: '' })} />
 
-      <div style={{ fontSize: '13px', color: '#64748B' }}>{filtered.length} document{filtered.length !== 1 ? 's' : ''} — click to open and review</div>
+      <div style={{ fontSize: '13px', color: '#64748B' }}>{filtered.length} document{filtered.length !== 1 ? 's' : ''} to review</div>
 
       {filtered.length === 0 ? <Empty text="No documents match filters." /> : filtered.map(doc => {
         const isExpanded = true
@@ -1578,8 +1578,8 @@ function DocumentsTab({ documents, onUpdate, onRefresh, setMessage, log, teacher
             </div>
             {isExpanded && (
               <div style={{ borderTop: '1px solid #E2E8F0', padding: '1.25rem 1.5rem', background: '#F8FAFC' }}>
-                <div style={{ marginBottom: '1rem' }}><DocViewBtn fileUrl={doc.file_url} name={doc.document_type} label="📄 View document" /></div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <DocViewBtn fileUrl={doc.file_url} name={doc.document_type} label="📄 View document" />
                   {doc.status !== 'approved' && <button onClick={() => { onUpdate(doc.id, 'approved'); setExpandedId(null) }} style={btnGreen}>✓ Approve</button>}
                   {doc.status !== 'declined' && <button onClick={() => { onUpdate(doc.id, 'declined'); setExpandedId(null) }} style={btnRed}>✗ Decline</button>}
                   {doc.status !== 'pending' && <button onClick={() => { onUpdate(doc.id, 'pending'); setExpandedId(null) }} style={btnYellow}>Reset to pending</button>}
