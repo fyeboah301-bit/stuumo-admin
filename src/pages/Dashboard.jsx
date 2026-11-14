@@ -1394,17 +1394,13 @@ function CertificatesTab({ certificates, onUpdate, onRefresh, setMessage, log, t
                 <div style={{ fontSize: '13px', color: '#64748B' }}>👩‍🏫 {cert.teachers?.profiles?.full_name} · {cert.certificate_type === 'academic' ? '🎓 Academic' : '📋 Teaching'} · {new Date(cert.uploaded_at).toLocaleDateString()}</div>
               </div>
               <StatusBadge status={cert.status} />
-            </div>
-            {isExpanded && (
-              <div style={{ borderTop: '1px solid #E2E8F0', padding: '1.25rem 1.5rem', background: '#F8FAFC' }}>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <ViewFileBtn url={cert.file_url} name={cert.certificate_name} label="📄 View certificate" />
-                  {cert.status !== 'approved' && <button onClick={() => { onUpdate(cert.id, 'approved'); setExpandedId(null) }} style={btnGreen}>✓ Approve</button>}
-                  {cert.status !== 'declined' && <button onClick={() => { onUpdate(cert.id, 'declined'); setExpandedId(null) }} style={btnRed}>✗ Decline</button>}
-                  {cert.status !== 'pending' && <button onClick={() => { onUpdate(cert.id, 'pending'); setExpandedId(null) }} style={btnYellow}>Reset to pending</button>}
-                </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <ViewFileBtn url={cert.file_url} name={cert.certificate_name} label="📄 View certificate" />
+                {cert.status !== 'approved' && <button onClick={() => { onUpdate(cert.id, 'approved') }} style={btnGreen}>✓ Approve</button>}
+                {cert.status !== 'declined' && <button onClick={() => { onUpdate(cert.id, 'declined') }} style={btnRed}>✗ Decline</button>}
+                {cert.status !== 'pending' && <button onClick={() => { onUpdate(cert.id, 'pending') }} style={btnYellow}>Reset to pending</button>}
               </div>
-            )}
+            </div>
           </div>
         )
       })}
@@ -1575,17 +1571,13 @@ function DocumentsTab({ documents, onUpdate, onRefresh, setMessage, log, teacher
                 <div style={{ fontSize: '13px', color: '#64748B' }}>👩‍🏫 {doc.profiles?.full_name} · {new Date(doc.uploaded_at).toLocaleDateString()}</div>
               </div>
               <StatusBadge status={doc.status} />
-            </div>
-            {isExpanded && (
-              <div style={{ borderTop: '1px solid #E2E8F0', padding: '1.25rem 1.5rem', background: '#F8FAFC' }}>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <DocViewBtn fileUrl={doc.file_url} name={doc.document_type} label="📄 View document" />
-                  {doc.status !== 'approved' && <button onClick={() => { onUpdate(doc.id, 'approved'); setExpandedId(null) }} style={btnGreen}>✓ Approve</button>}
-                  {doc.status !== 'declined' && <button onClick={() => { onUpdate(doc.id, 'declined'); setExpandedId(null) }} style={btnRed}>✗ Decline</button>}
-                  {doc.status !== 'pending' && <button onClick={() => { onUpdate(doc.id, 'pending'); setExpandedId(null) }} style={btnYellow}>Reset to pending</button>}
-                </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <DocViewBtn fileUrl={doc.file_url} name={doc.document_type} label="📄 View document" />
+                {doc.status !== 'approved' && <button onClick={() => { onUpdate(doc.id, 'approved') }} style={btnGreen}>✓ Approve</button>}
+                {doc.status !== 'declined' && <button onClick={() => { onUpdate(doc.id, 'declined') }} style={btnRed}>✗ Decline</button>}
+                {doc.status !== 'pending' && <button onClick={() => { onUpdate(doc.id, 'pending') }} style={btnYellow}>Reset to pending</button>}
               </div>
-            )}
+            </div>
           </div>
         )
       })}
