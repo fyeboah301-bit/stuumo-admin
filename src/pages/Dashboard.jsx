@@ -962,7 +962,14 @@ export default function Dashboard() {
 
   const showMsg = (msg) => { setMessage(msg); setTimeout(() => setMessage(''), 4000) }
 
-  const updateCert = async (id, status) => { await supabase.from('certificates').update({ status }).eq('id', id); await log(`Certificate ${status}`, 'certificate', id); showMsg(`✅ Certificate ${status}.`); fetchAll() }
+  const updateCert = async (id, status) => {
+    await supabase.from('certificates').update({ status }).eq('id', id)
+    if (status === 'approved') {
+      const { data: cert } = await supabase.from('certificates').select('teacher_id, education_level').eq('id', id).single()
+      if (cert?.education_level && cert?.teacher_id) await supabase.from('teachers').update({ education_level: cert.education_level, pending_education_level: null }).eq('id', cert.teacher_id)
+    }
+    await log(`Certificate ${status}`, 'certificate', id); showMsg(`✅ Certificate ${status}.`); fetchAll()
+  }
   const updateDoc = async (id, status) => { await supabase.from('teacher_documents').update({ status }).eq('id', id); await log(`Document ${status}`, 'document', id); showMsg(`✅ Document ${status}.`); fetchAll() }
   const updateTeacher = async (id, is_verified) => { await supabase.from('teachers').update({ is_verified }).eq('id', id); await log(is_verified ? 'Teacher verified' : 'Teacher unverified', 'teacher', id); showMsg(`✅ Teacher ${is_verified ? 'verified' : 'unverified'}.`); fetchAll() }
 
@@ -1069,6 +1076,10 @@ export default function Dashboard() {
   }
   const reviewCert = async (certId, status, teacherId) => {
     await supabase.from('certificates').update({ status }).eq('id', certId)
+    if (status === 'approved' && teacherId) {
+      const { data: cert } = await supabase.from('certificates').select('education_level').eq('id', certId).single()
+      if (cert?.education_level) await supabase.from('teachers').update({ education_level: cert.education_level, pending_education_level: null }).eq('id', teacherId)
+    }
     if (status === 'rejected' && teacherId) {
       await supabase.from('teachers').update({ application_stage: 'resubmission_needed' }).eq('id', teacherId)
       await supabase.from('notifications').insert({ user_id: teacherId, title: 'Certificate needs resubmission', message: 'A certificate on your application was not approved. Check your email for a secure link to re-upload it.', type: 'certificate', link: '/dashboard' })
@@ -1391,7 +1402,7 @@ function CertificatesTab({ certificates, onUpdate, onRefresh, setMessage, log, t
               {cert.status === 'pending' && <input type="checkbox" checked={selected.has(cert.id)} onChange={e => { e.stopPropagation(); toggle(cert.id) }} onClick={e => e.stopPropagation()} style={{ width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0 }} />}
               <div style={{ flex: 1, minWidth: '200px' }}>
                 <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '4px', color: '#111' }}>{cert.certificate_name}</div>
-                <div style={{ fontSize: '13px', color: '#64748B' }}>👩‍🏫 {cert.teachers?.profiles?.full_name} · {cert.certificate_type === 'academic' ? '🎓 Academic' : '📋 Teaching'} · {new Date(cert.uploaded_at).toLocaleDateString()}</div>
+                <div style={{ fontSize: '13px', color: '#64748B' }}>👩‍🏫 {cert.teachers?.profiles?.full_name} · {cert.certificate_type === 'academic' ? '🎓 Academic' : '📋 Teaching'}{cert.education_level ? ` · 🏷️ ${cert.education_level}` : ''} · {new Date(cert.uploaded_at).toLocaleDateString()}</div>
               </div>
               <StatusBadge status={cert.status} />
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
