@@ -901,11 +901,11 @@ export default function Dashboard() {
       { data: referralData }, { data: announcementData }, { data: auditData }, { data: flagData },
       { data: enrollData }
     ] = await Promise.all([
-      supabase.from('teachers').select('*, profiles (full_name, city, country, avatar_url, status, email, phone, created_at)').order('is_verified', { ascending: true }),
+      supabase.from('teachers').select('*, profiles (full_name, city, country, avatar_url, status, created_at)').order('is_verified', { ascending: true }),
       supabase.from('certificates').select('*, teachers:teacher_id (profiles (full_name))').order('uploaded_at', { ascending: false }),
       supabase.from('teacher_documents').select('*, profiles:teacher_id (full_name)').order('uploaded_at', { ascending: false }),
       supabase.from('reviews').select('*, reviewer:reviewer_id (full_name), teacher:teacher_id (profiles (full_name))').order('created_at', { ascending: false }),
-      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+      supabase.from('profiles_all').select('*').order('created_at', { ascending: false }),
       supabase.from('bookings').select('*, profiles:client_id (full_name), teachers (id, profiles (full_name))').order('created_at', { ascending: false }),
       supabase.from('live_sessions').select('*, teachers (id, profiles (full_name, city, country))').order('created_at', { ascending: false }),
       supabase.from('payments').select('*').order('created_at', { ascending: false }),
@@ -929,11 +929,12 @@ export default function Dashboard() {
     const bookingsByTeacher = {}
     ;(bookingData || []).forEach(b => { if (b.status === 'confirmed') bookingsByTeacher[b.teacher_id] = (bookingsByTeacher[b.teacher_id] || 0) + 1 })
     const approvedCertTeachers = new Set((certData || []).filter(c => c.status === 'approved').map(c => c.teacher_id))
+    const contactMap = Object.fromEntries((userData || []).map(u => [u.id, { email: u.email, phone: u.phone }]))
     const scoredTeachers = (teacherData || []).map(t => {
       const ratings = reviewsByTeacher[t.id] || []
       const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0
       const total = Math.round((avgRating / 5) * 40) + Math.min((bookingsByTeacher[t.id] || 0) * 3, 30) + (approvedCertTeachers.has(t.id) ? 20 : 0) + (t.is_verified ? 10 : 0)
-      return { ...t, qualityScore: total, avgRating: avgRating.toFixed(1), reviewCount: ratings.length, bookingCount: bookingsByTeacher[t.id] || 0 }
+      return { ...t, profiles: { ...t.profiles, ...(contactMap[t.id] || {}) }, qualityScore: total, avgRating: avgRating.toFixed(1), reviewCount: ratings.length, bookingCount: bookingsByTeacher[t.id] || 0 }
     }).sort((a, b) => b.qualityScore - a.qualityScore)
 
     setTeachers(scoredTeachers)
@@ -1068,8 +1069,9 @@ export default function Dashboard() {
     if (status === 'rejected' && teacherId) {
       await supabase.from('teachers').update({ application_stage: 'resubmission_needed' }).eq('id', teacherId)
       await supabase.from('notifications').insert({ user_id: teacherId, title: 'Document needs resubmission', message: 'A document on your application was not approved. Check your email for a secure link to re-upload it.', type: 'document', link: '/dashboard' })
-      const { data: prof } = await supabase.from('profiles').select('full_name, email').eq('id', teacherId).single()
-      if (prof?.email) { try { await supabase.functions.invoke('send-resubmission-link', { body: { email: prof.email, name: prof.full_name } }) } catch (e) {} }
+      const { data: prof } = await supabase.from('profiles').select('full_name').eq('id', teacherId).single()
+      const { data: pc } = await supabase.from('profile_contacts').select('email').eq('id', teacherId).single()
+      if (pc?.email) { try { await supabase.functions.invoke('send-resubmission-link', { body: { email: pc.email, name: prof?.full_name } }) } catch (e) {} }
     }
     await log(`Document ${status}`, 'document', docId)
     showMsg(`✅ Document ${status}.`); fetchAll()
@@ -1083,8 +1085,9 @@ export default function Dashboard() {
     if (status === 'rejected' && teacherId) {
       await supabase.from('teachers').update({ application_stage: 'resubmission_needed' }).eq('id', teacherId)
       await supabase.from('notifications').insert({ user_id: teacherId, title: 'Certificate needs resubmission', message: 'A certificate on your application was not approved. Check your email for a secure link to re-upload it.', type: 'certificate', link: '/dashboard' })
-      const { data: prof } = await supabase.from('profiles').select('full_name, email').eq('id', teacherId).single()
-      if (prof?.email) { try { await supabase.functions.invoke('send-resubmission-link', { body: { email: prof.email, name: prof.full_name } }) } catch (e) {} }
+      const { data: prof } = await supabase.from('profiles').select('full_name').eq('id', teacherId).single()
+      const { data: pc } = await supabase.from('profile_contacts').select('email').eq('id', teacherId).single()
+      if (pc?.email) { try { await supabase.functions.invoke('send-resubmission-link', { body: { email: pc.email, name: prof?.full_name } }) } catch (e) {} }
     }
     await log(`Certificate ${status}`, 'certificate', certId)
     showMsg(`✅ Certificate ${status}.`); fetchAll()
@@ -1092,7 +1095,7 @@ export default function Dashboard() {
   const declinePhotoReg = async (teacherId, name = '') => {
     await supabase.from('teachers').update({ application_stage: 'resubmission_needed' }).eq('id', teacherId)
     await supabase.from('notifications').insert({ user_id: teacherId, title: 'Profile photo needs resubmission', message: 'Your profile photo was not approved. Check your email for a secure link to upload a clearer one.', type: 'profile', link: '/dashboard' })
-    const { data: pf } = await supabase.from('profiles').select('email').eq('id', teacherId).single()
+    const { data: pf } = await supabase.from('profile_contacts').select('email').eq('id', teacherId).single()
     if (pf?.email) { try { await supabase.functions.invoke('send-resubmission-link', { body: { email: pf.email, name } }) } catch (e) {} }
     await log('Profile photo declined (resubmission)', 'user', teacherId, name)
     showMsg('✅ Photo declined — resubmission requested.'); fetchAll()
